@@ -1,0 +1,9 @@
+env: development
+debug: true
+
+langsmith:
+  project: contentblitz-dev
+
+logging:
+  level: DEBUG
+  format: "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"

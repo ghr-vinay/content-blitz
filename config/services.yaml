@@ -1,0 +1,14 @@
+llm:
+  provider: openai          # primary LLM provider
+  model: gpt-4o
+  temperature: 0.7
+  max_tokens: 4096
+
+search:
+  provider: serp            # primary search provider
+  num_results: 5
+
+image:
+  provider: dalle3          # primary image provider
+  size: "1024x1024"
+  quality: standard         # options: standard | hd

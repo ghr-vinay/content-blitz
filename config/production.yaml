@@ -1,0 +1,9 @@
+env: production
+debug: false
+
+langsmith:
+  project: contentblitz-prod
+
+logging:
+  level: INFO
+  format: "%(asctime)s | %(levelname)-8s | %(name)s | %(message)s"
