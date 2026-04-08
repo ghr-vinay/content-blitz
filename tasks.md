@@ -61,11 +61,11 @@ The codebase will follow SOLID principles throughout:
 
 ### Phase 3: Integration Clients (LangChain Tools)
 
-- [ ] **3.1** Implement `src/integrations/openai_client.py` — OpenAI GPT-4 wrapper implementing `BaseLLMClient` interface using LangChain ChatOpenAI (**Dependency Inversion**)
-- [ ] **3.2** Implement `src/integrations/serp_client.py` — SERP API wrapper implementing `BaseSearchTool` interface as a LangChain Tool (**Interface Segregation**)
-- [ ] **3.3** Implement `src/integrations/image_clients.py` — DALL-E 3 implementation of `BaseImageTool` interface as a LangChain Tool (**Liskov Substitution** — can be swapped with any other image provider)
-- [ ] **3.4** Implement retry/error handling across all integration clients (exponential backoff via tenacity)
-- [ ] **3.5** _(Optional)_ Implement `src/integrations/perplexity_client.py` — implements same `BaseSearchTool` interface as SERP client, demonstrating provider swappability (**Open/Closed**)
+- [x] **3.1** Implement `src/integrations/openai_client.py` — OpenAI GPT-4 wrapper implementing `BaseLLMClient` interface using LangChain ChatOpenAI (**Dependency Inversion**)
+- [x] **3.2** Implement `src/integrations/serp_client.py` — SERP API wrapper implementing `BaseSearchTool` interface as a LangChain Tool (**Interface Segregation**)
+- [x] **3.3** Implement `src/integrations/image_clients.py` — DALL-E 3 implementation of `BaseImageTool` interface as a LangChain Tool (**Liskov Substitution** — can be swapped with any other image provider)
+- [x] **3.4** Implement retry/error handling across all integration clients (exponential backoff via tenacity)
+- [x] **3.5** _(Optional)_ Implement `src/integrations/perplexity_client.py` — implements same `BaseSearchTool` interface as SERP client, demonstrating provider swappability (**Open/Closed**)
 
 ---
 
