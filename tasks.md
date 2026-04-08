@@ -71,11 +71,11 @@ The codebase will follow SOLID principles throughout:
 
 ### Phase 4: LangGraph State & Workflow Engine
 
-- [ ] **4.1** Implement `src/workflow/state_management.py` — define LangGraph `TypedDict` state schema (user query, intent, research context, generated content, conversation history, image URLs)
-- [ ] **4.2** Implement `src/workflow/langgraph_workflow.py` — build the LangGraph `StateGraph` with nodes for each agent and conditional edges for routing
-- [ ] **4.3** Implement conversation memory — persist multi-turn context across interactions using LangGraph state
-- [ ] **4.4** Implement error handling within the graph — graceful degradation, fallback nodes, partial result recovery
-- [ ] **4.5** Verify full graph traces appear in LangSmith with node-level visibility
+- [x] **4.1** Implement `src/workflow/state_management.py` — define LangGraph `TypedDict` state schema (user query, intent, research context, generated content, conversation history, image URLs)
+- [x] **4.2** Implement `src/workflow/langgraph_workflow.py` — build the LangGraph `StateGraph` with nodes for each agent and conditional edges for routing
+- [x] **4.3** Implement conversation memory — persist multi-turn context across interactions using LangGraph state
+- [x] **4.4** Implement error handling within the graph — graceful degradation, fallback nodes, partial result recovery
+- [x] **4.5** Verify full graph traces appear in LangSmith with node-level visibility
 
 ---
 
