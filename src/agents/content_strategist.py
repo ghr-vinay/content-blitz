@@ -82,7 +82,7 @@ class ContentStrategistAgent(BaseAgent):
 
         try:
             raw = self._llm.generate(
-                prompt, config={"run_name": "content_strategist"}
+                prompt, config={"run_name": "content_strategist~run"}
             )
             parsed = self._parse_json(raw)
 

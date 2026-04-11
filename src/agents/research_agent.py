@@ -62,7 +62,7 @@ class ResearchAgent(BaseAgent):
 
             # Step 2: Synthesise with LLM
             prompt = _SYNTHESIS_PROMPT.format(topic=topic, raw_results=raw_results)
-            raw = self._llm.generate(prompt, config={"run_name": "research_agent"})
+            raw = self._llm.generate(prompt, config={"run_name": "research_agent~run"})
             parsed = self._parse_json(raw)
 
             research = ResearchResult(

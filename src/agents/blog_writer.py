@@ -84,7 +84,7 @@ class BlogWriterAgent(BaseAgent):
         prompt = _BLOG_PROMPT.format(topic=topic, research_context=research_context)
 
         try:
-            raw = self._llm.generate(prompt, config={"run_name": "blog_writer"})
+            raw = self._llm.generate(prompt, config={"run_name": "blog_writer~run"})
             parsed = self._parse_json(raw)
 
             blog = BlogPost(

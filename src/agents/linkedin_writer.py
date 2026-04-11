@@ -92,7 +92,7 @@ class LinkedInWriterAgent(BaseAgent):
         )
 
         try:
-            raw = self._llm.generate(prompt, config={"run_name": "linkedin_writer"})
+            raw = self._llm.generate(prompt, config={"run_name": "linkedin_writer~run"})
             parsed = self._parse_json(raw)
 
             post = LinkedInPost(

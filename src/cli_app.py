@@ -113,7 +113,7 @@ def main() -> None:
             continue
 
         # ── Commands ──────────────────────────────────────────────────────────
-        if user_input.lower() in ("/quit", "/exit"):
+        if user_input.lower() in ("/quit", "/exit", "/q"):
             print("Bye!")
             break
 

@@ -57,7 +57,7 @@ class ImageGeneratorAgent(BaseAgent):
             )
             optimised_prompt: str = self._llm.generate(
                 optimiser_prompt,
-                config={"run_name": "image_prompt_optimizer"},
+                config={"run_name": "image_prompt_optimizer~run"},
             ).strip()
 
             logger.debug("ImageGeneratorAgent: optimised prompt=%r", optimised_prompt[:120])

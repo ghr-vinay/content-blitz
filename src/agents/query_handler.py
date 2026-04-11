@@ -62,7 +62,7 @@ class QueryHandlerAgent(BaseAgent):
         try:
             raw = self._llm.generate(
                 prompt,
-                config={"run_name": "query_handler"},
+                config={"run_name": "query_handler~run"},
             )
             parsed = self._parse_response(raw)
             intent: str = parsed.get("intent", "research")
