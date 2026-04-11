@@ -14,7 +14,7 @@ SOLID:
 
 from typing import Any
 
-from langchain_core.messages import HumanMessage
+from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 
 from src.core.config import Config
 from src.core.models import AgentState
@@ -67,6 +67,16 @@ def run(
 
     app = _get_app(config)
 
+    # Reconstruct prior history as properly typed messages, then append current query
+    history_messages: list[BaseMessage] = []
+    if conversation_history:
+        for turn in conversation_history:
+            role = turn.get("role", "human")
+            content = str(turn.get("content", ""))
+            history_messages.append(
+                HumanMessage(content=content) if role == "human" else AIMessage(content=content)
+            )
+
     # Build the initial LangGraph state
     initial_state: GraphState = {
         "user_query": user_query,
@@ -76,18 +86,13 @@ def run(
         "linkedin_post": None,
         "image_result": None,
         "content_strategy": None,
-        "messages": [HumanMessage(content=user_query)],
+        "messages": [*history_messages, HumanMessage(content=user_query)],
         "error": None,
         # Pass optional hints as top-level keys; agents read these from state
         "image_style": image_style,           # type: ignore[typeddict-item]
         "image_size": image_size,             # type: ignore[typeddict-item]
         "linkedin_post_type": linkedin_post_type,  # type: ignore[typeddict-item]
     }
-
-    # Inject prior conversation history into messages if provided
-    if conversation_history:
-        for turn in conversation_history:
-            initial_state["messages"].append(HumanMessage(content=str(turn)))
 
     try:
         final_state: GraphState = app.invoke(
@@ -114,7 +119,10 @@ def _graph_state_to_agent_state(state: GraphState) -> AgentState:
         image_result=state.get("image_result"),
         content_strategy=state.get("content_strategy"),
         conversation_history=[
-            {"role": "human", "content": m.content}
+            {
+                "role": "human" if isinstance(m, HumanMessage) else "ai",
+                "content": m.content,
+            }
             for m in state.get("messages", [])
             if hasattr(m, "content")
         ],
