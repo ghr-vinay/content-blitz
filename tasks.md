@@ -118,10 +118,11 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 
 ### Phase 6: Router & Orchestration
 
-- [ ] **6.1** Implement `src/core/router.py` — routing logic maps intent to agent nodes; references agents by their `BaseAgent` interface, not concrete classes (**DIP**)
-- [ ] **6.2** Implement `src/core/workflow.py` — high-level workflow orchestration (research → blog, research → linkedin, etc.); adding new workflows doesn't modify existing ones (**OCP**)
-- [ ] **6.3** Support chained workflows — e.g., research first, then generate blog + linkedin + image from the same research
-- [ ] **6.4** Verify all multi-agent flows are fully traced end-to-end in LangSmith
+- [x] **6.1** Implement `src/core/router.py` — routing logic maps intent to agent nodes; references agents by their `BaseAgent` interface, not concrete classes (**DIP**)
+- [x] **6.2** Implement `src/core/workflow.py` — high-level workflow orchestration (research → blog, research → linkedin, etc.); adding new workflows doesn't modify existing ones (**OCP**)
+- [x] **6.3** Support chained workflows — e.g., research first, then generate blog + linkedin + image from the same research
+- [x] **6.4** Verify all multi-agent flows are fully traced end-to-end in LangSmith
+- [x] **6.5** Implement `src/cli_app.py` — interactive terminal interface for back-and-forth conversations with the agent system; supports multi-turn history, `/clear`, `/quit`, and formatted output per content type
 
 ---
 
