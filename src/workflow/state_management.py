@@ -42,5 +42,8 @@ class GraphState(TypedDict):
     # preserving full multi-turn history across graph invocations.
     messages: Annotated[list, add_messages]
 
+    # ── Content strategy output ───────────────────────────────────────────────
+    content_strategy: Optional[str]
+
     # ── Error handling ─────────────────────────────────────────────────────────
     error: Optional[str]

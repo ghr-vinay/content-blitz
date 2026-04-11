@@ -84,35 +84,35 @@ The codebase will follow SOLID principles throughout:
 All agents extend `BaseAgent` and implement the `run(state) -> state` contract. Each agent has a **single responsibility** and receives its dependencies (LLM client, tools) via constructor injection (**Dependency Inversion**).
 
 #### 5A: Query Handler Agent (Router)
-- [ ] **5.1** Implement `src/agents/query_handler.py` — extends `BaseAgent`; single responsibility is intent classification (research, blog, linkedin, image, strategy)
-- [ ] **5.2** Build routing logic — map classified intent to the correct downstream agent node(s) in the graph
-- [ ] **5.3** Handle ambiguous queries — ask clarifying questions or select a reasonable default
-- [ ] **5.4** Support multi-intent queries — detect when user wants multiple outputs (e.g., "research X and write a blog about it")
+- [x] **5.1** Implement `src/agents/query_handler.py` — extends `BaseAgent`; single responsibility is intent classification (research, blog, linkedin, image, strategy)
+- [x] **5.2** Build routing logic — map classified intent to the correct downstream agent node(s) in the graph
+- [x] **5.3** Handle ambiguous queries — ask clarifying questions or select a reasonable default
+- [x] **5.4** Support multi-intent queries — detect when user wants multiple outputs (e.g., "research X and write a blog about it")
 
 #### 5B: Deep Research Agent
-- [ ] **5.5** Implement `src/agents/research_agent.py` — extends `BaseAgent`; depends on injected `BaseSearchTool`, not a concrete SERP client (**DIP**)
-- [ ] **5.6** Add research synthesis — aggregate multiple search results into a coherent research summary
-- [ ] **5.7** Add source attribution — track and include URLs/references in research output
+- [x] **5.5** Implement `src/agents/research_agent.py` — extends `BaseAgent`; depends on injected `BaseSearchTool`, not a concrete SERP client (**DIP**)
+- [x] **5.6** Add research synthesis — aggregate multiple search results into a coherent research summary
+- [x] **5.7** Add source attribution — track and include URLs/references in research output
 
 #### 5C: SEO Blog Writer Agent
-- [ ] **5.8** Implement `src/agents/blog_writer.py` — extends `BaseAgent`; single responsibility is SEO blog generation, outputs `BlogPost` Pydantic model
-- [ ] **5.9** Integrate keyword research — extract primary/secondary keywords and weave them into content
-- [ ] **5.10** Generate meta descriptions, title tags, header hierarchy (H1/H2/H3)
-- [ ] **5.11** Accept research output as input context for research-first workflows
+- [x] **5.8** Implement `src/agents/blog_writer.py` — extends `BaseAgent`; single responsibility is SEO blog generation, outputs `BlogPost` Pydantic model
+- [x] **5.9** Integrate keyword research — extract primary/secondary keywords and weave them into content
+- [x] **5.10** Generate meta descriptions, title tags, header hierarchy (H1/H2/H3)
+- [x] **5.11** Accept research output as input context for research-first workflows
 
 #### 5D: LinkedIn Post Writer Agent
-- [ ] **5.12** Implement `src/agents/linkedin_writer.py` — extends `BaseAgent`; single responsibility is LinkedIn post generation, outputs `LinkedInPost` model
-- [ ] **5.13** Add hashtag strategy — generate relevant hashtags based on content and trends
-- [ ] **5.14** Optimize for LinkedIn formatting (character limits, line breaks, hooks)
+- [x] **5.12** Implement `src/agents/linkedin_writer.py` — extends `BaseAgent`; single responsibility is LinkedIn post generation, outputs `LinkedInPost` model
+- [x] **5.13** Add hashtag strategy — generate relevant hashtags based on content and trends
+- [x] **5.14** Optimize for LinkedIn formatting (character limits, line breaks, hooks)
 
 #### 5E: Image Generation Agent
-- [ ] **5.15** Implement `src/agents/image_generator.py` — extends `BaseAgent`; depends on injected `BaseImageTool`, not DALL-E directly (**DIP**)
-- [ ] **5.16** Add prompt optimization — enhance user's vague image request into a detailed DALL-E prompt
-- [ ] **5.17** Support style/size parameters — aspect ratio, style (photorealistic, illustration, etc.)
-- [ ] **5.18** Handle image generation errors gracefully (content policy violations, rate limits)
+- [x] **5.15** Implement `src/agents/image_generator.py` — extends `BaseAgent`; depends on injected `BaseImageTool`, not DALL-E directly (**DIP**)
+- [x] **5.16** Add prompt optimization — enhance user's vague image request into a detailed DALL-E prompt
+- [x] **5.17** Support style/size parameters — aspect ratio, style (photorealistic, illustration, etc.)
+- [x] **5.18** Handle image generation errors gracefully (content policy violations, rate limits)
 
 #### 5F: Content Strategist Agent
-- [ ] **5.19** Implement `src/agents/content_strategist.py` — extends `BaseAgent`; single responsibility is formatting/organizing research into structured content
+- [x] **5.19** Implement `src/agents/content_strategist.py` — extends `BaseAgent`; single responsibility is formatting/organizing research into structured content
 
 ---
 

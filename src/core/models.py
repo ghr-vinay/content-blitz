@@ -68,4 +68,5 @@ class AgentState(BaseModel):
     linkedin_post: Optional[LinkedInPost] = None
     image_result: Optional[ImageResult] = None
     conversation_history: list[dict] = Field(default_factory=list)
+    content_strategy: Optional[str] = None
     error: Optional[str] = None
