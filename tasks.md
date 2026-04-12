@@ -73,7 +73,7 @@ The codebase will follow SOLID principles throughout:
 
 - [x] **4.1** Implement `src/workflow/state_management.py` — define LangGraph `TypedDict` state schema (user query, intent, research context, generated content, conversation history, image URLs)
 - [x] **4.2** Implement `src/workflow/langgraph_workflow.py` — build the LangGraph `StateGraph` with nodes for each agent and conditional edges for routing
-- [x] **4.3** Implement conversation memory — persist multi-turn context across interactions using LangGraph state
+- [x] **4.3** Implement conversation memory — persist multi-turn context across interactions using LangGraph state; messages serialized with correct role (`HumanMessage` / `AIMessage`) for accurate LLM context; prior history reconstructed in correct chronological order before the current query
 - [x] **4.4** Implement error handling within the graph — graceful degradation, fallback nodes, partial result recovery
 - [x] **4.5** Verify full graph traces appear in LangSmith with node-level visibility
 
@@ -88,17 +88,18 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 - [x] **5.2** Build routing logic — map classified intent to the correct downstream agent node(s) in the graph
 - [x] **5.3** Handle ambiguous queries — ask clarifying questions or select a reasonable default
 - [x] **5.4** Support multi-intent queries — detect when user wants multiple outputs (e.g., "research X and write a blog about it")
+- [x] **5.5** Inject sliding window conversation history into query_handler prompt — last `_HISTORY_WINDOW` (6) messages formatted as `User`/`Assistant` lines; enables follow-up resolution (e.g. "now write a blog about that") without exceeding token limits
 
 #### 5B: Deep Research Agent
-- [x] **5.5** Implement `src/agents/research_agent.py` — extends `BaseAgent`; depends on injected `BaseSearchTool`, not a concrete SERP client (**DIP**)
-- [x] **5.6** Add research synthesis — aggregate multiple search results into a coherent research summary
-- [x] **5.7** Add source attribution — track and include URLs/references in research output
+- [x] **5.6** Implement `src/agents/research_agent.py` — extends `BaseAgent`; depends on injected `BaseSearchTool`, not a concrete SERP client (**DIP**)
+- [x] **5.7** Add research synthesis — aggregate multiple search results into a coherent research summary
+- [x] **5.8** Add source attribution — track and include URLs/references in research output
 
 #### 5C: SEO Blog Writer Agent
-- [x] **5.8** Implement `src/agents/blog_writer.py` — extends `BaseAgent`; single responsibility is SEO blog generation, outputs `BlogPost` Pydantic model
-- [x] **5.9** Integrate keyword research — extract primary/secondary keywords and weave them into content
-- [x] **5.10** Generate meta descriptions, title tags, header hierarchy (H1/H2/H3)
-- [x] **5.11** Accept research output as input context for research-first workflows
+- [x] **5.9** Implement `src/agents/blog_writer.py` — extends `BaseAgent`; single responsibility is SEO blog generation, outputs `BlogPost` Pydantic model
+- [x] **5.10** Integrate keyword research — extract primary/secondary keywords and weave them into content
+- [x] **5.11** Generate meta descriptions, title tags, header hierarchy (H1/H2/H3)
+- [x] **5.12** Accept research output as input context for research-first workflows
 
 #### 5D: LinkedIn Post Writer Agent
 - [x] **5.12** Implement `src/agents/linkedin_writer.py` — extends `BaseAgent`; single responsibility is LinkedIn post generation, outputs `LinkedInPost` model

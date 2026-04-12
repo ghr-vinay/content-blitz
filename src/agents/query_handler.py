@@ -1,9 +1,15 @@
 import json
 from typing import Any
 
+from langchain_core.messages import HumanMessage
+
 from src.agents.base_agent import BaseAgent
 from src.integrations.base_tool import BaseLLMClient
 from src.utils.logger import get_logger
+
+# Number of prior messages (turns) to include as conversation context.
+# Each turn = 1 message, so 6 ≈ 3 back-and-forth exchanges.
+_HISTORY_WINDOW = 6
 
 logger = get_logger(__name__)
 
@@ -21,15 +27,17 @@ Classify the user's request into EXACTLY ONE of these intents:
 - multi      → user wants research AND one or more content formats (blog, linkedin, image)
 
 Rules:
-1. Reply with ONLY a JSON object: {{"intent": "<value>", "clarified_query": "<cleaned user query>"}}
+1. Reply with ONLY a JSON object: {"intent": "<value>", "clarified_query": "<cleaned user query>"}
 2. If the request is ambiguous, default to "research".
 3. "multi" applies when the user explicitly asks for multiple output formats or says things like
    "research X and write a blog about it".
+4. Use the conversation history (if provided) to resolve pronouns and follow-up references
+   (e.g. "now write a blog about that" → infer topic from prior turns).
 
 Examples:
-- "Write me a blog about LangGraph" → {{"intent": "blog", "clarified_query": "Write a blog post about LangGraph"}}
-- "Research the latest AI trends and make a LinkedIn post" → {{"intent": "multi", "clarified_query": "AI trends 2025"}}
-- "Generate an image of a futuristic city" → {{"intent": "image", "clarified_query": "futuristic city"}}
+- "Write me a blog about LangGraph" → {"intent": "blog", "clarified_query": "Write a blog post about LangGraph"}
+- "Research the latest AI trends and make a LinkedIn post" → {"intent": "multi", "clarified_query": "AI trends 2025"}
+- "Generate an image of a futuristic city" → {"intent": "image", "clarified_query": "futuristic city"}
 """
 
 
@@ -57,7 +65,9 @@ class QueryHandlerAgent(BaseAgent):
 
         logger.info("QueryHandlerAgent: classifying query=%r", user_query[:80])
 
-        prompt = f"{_SYSTEM_PROMPT}\n\nUser request: {user_query}"
+        history_block = self._format_history(state.get("messages", []))
+        history_section = f"\n\nConversation history (last {_HISTORY_WINDOW} messages):\n{history_block}" if history_block else ""
+        prompt = f"{_SYSTEM_PROMPT}{history_section}\n\nUser request: {user_query}"
 
         try:
             raw = self._llm.generate(
@@ -87,6 +97,23 @@ class QueryHandlerAgent(BaseAgent):
             return {"error": str(exc), "intent": None}
 
     # ── Helpers ────────────────────────────────────────────────────────────────
+
+    def _format_history(self, messages: list) -> str:
+        """
+        Format the last _HISTORY_WINDOW messages into a readable string.
+        Excludes the final message (current query, already in 'User request').
+        """
+        # Exclude the last message — it's the current query already in the prompt
+        prior = messages[:-1] if messages else []
+        window = prior[-_HISTORY_WINDOW:]
+        if not window:
+            return ""
+        lines = []
+        for msg in window:
+            role = "User" if isinstance(msg, HumanMessage) else "Assistant"
+            content = str(getattr(msg, "content", msg))
+            lines.append(f"{role}: {content}")
+        return "\n".join(lines)
 
     def _parse_response(self, raw: str) -> dict[str, str]:
         """
