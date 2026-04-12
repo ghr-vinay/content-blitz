@@ -180,3 +180,29 @@ def build_graph(
     compiled = graph.compile()
     logger.info("ContentBlitz graph compiled successfully")
     return compiled
+
+
+def visualise_graph(output_path: str = "graph.png") -> str:
+    """
+    Render the ContentBlitz graph as a PNG and return the file path.
+
+    Uses LangGraph's built-in Mermaid→PNG renderer (calls Mermaid.js public API).
+    Falls back to ASCII in the terminal if the PNG render fails (e.g. no internet).
+
+    Args:
+        output_path: Where to save the PNG file. Defaults to 'graph.png'.
+
+    Returns:
+        Absolute path to the saved PNG, or an empty string on failure.
+    """
+    compiled = build_graph()
+    try:
+        png_bytes: bytes = compiled.get_graph().draw_mermaid_png()
+        with open(output_path, "wb") as f:
+            f.write(png_bytes)
+        logger.info("Graph PNG saved to %s", output_path)
+        return output_path
+    except Exception as exc:
+        logger.warning("PNG render failed (%s) — falling back to ASCII", exc)
+        compiled.get_graph().print_ascii()
+        return ""

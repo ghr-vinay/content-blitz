@@ -123,6 +123,7 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 - [x] **6.3** Support chained workflows — e.g., research first, then generate blog + linkedin + image from the same research
 - [x] **6.4** Verify all multi-agent flows are fully traced end-to-end in LangSmith
 - [x] **6.5** Implement `src/cli_app.py` — interactive terminal interface for back-and-forth conversations with the agent system; supports multi-turn history, `/clear`, `/quit`, and formatted output per content type
+- [x] **6.6** Implement `src/visualise_app.py` — renders the compiled LangGraph as a PNG via the Mermaid.js API, saves to `graph.png`, and auto-opens it in default image-viewer; falls back to ASCII terminal output if the render fails
 
 ---
 
