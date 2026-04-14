@@ -39,6 +39,29 @@ LinkedIn writing guidelines:
 - Respond with ONLY the JSON object, no extra text
 """
 
+_REFINEMENT_LINKEDIN_PROMPT = """You are an expert LinkedIn content strategist.
+
+You previously wrote the LinkedIn post below. The user wants to UPDATE it.
+
+Existing post:
+{existing_content}
+
+Updated topic / instruction: {topic}
+Post type: {post_type}
+
+{research_context}
+
+Produce an UPDATED version of the LinkedIn post incorporating the new instruction.
+Your response must be valid JSON with this exact structure:
+{{
+  "content": "<updated LinkedIn post text>",
+  "hashtags": ["#hashtag1", "#hashtag2", ...],
+  "post_type": "{post_type}"
+}}
+
+Respond with ONLY the JSON object, no extra text.
+"""
+
 _RESEARCH_CONTEXT_TMPL = """
 Research context:
 {summary}
@@ -65,16 +88,18 @@ class LinkedInWriterAgent(BaseAgent):
         return "linkedin_writer"
 
     def run(self, state: dict[str, Any]) -> dict[str, Any]:
-        topic: str = state.get("user_query", "").strip()
+        topic: str = (state.get("clarified_user_query") or state.get("user_query", "")).strip()
         research: ResearchResult | None = state.get("research")
         post_type: str = state.get("linkedin_post_type", "general")
+        is_refinement: bool = state.get("is_refinement", False)
+        existing_post: LinkedInPost | None = state.get("linkedin_post") if is_refinement else None
 
         if not topic:
             return {"error": "LinkedInWriterAgent: no topic provided."}
 
         logger.info(
-            "LinkedInWriterAgent: writing post | topic=%r | type=%s",
-            topic[:60], post_type,
+            "LinkedInWriterAgent: writing post | topic=%r | type=%s | is_refinement=%s",
+            topic[:60], post_type, is_refinement,
         )
 
         research_context = ""
@@ -85,11 +110,19 @@ class LinkedInWriterAgent(BaseAgent):
                 findings=findings_str,
             )
 
-        prompt = _LINKEDIN_PROMPT.format(
-            topic=topic,
-            post_type=post_type,
-            research_context=research_context,
-        )
+        if is_refinement and existing_post:
+            prompt = _REFINEMENT_LINKEDIN_PROMPT.format(
+                topic=topic,
+                post_type=post_type,
+                existing_content=existing_post.content,
+                research_context=research_context,
+            )
+        else:
+            prompt = _LINKEDIN_PROMPT.format(
+                topic=topic,
+                post_type=post_type,
+                research_context=research_context,
+            )
 
         try:
             raw = self._llm.generate(prompt, config={"run_name": "linkedin_writer~run"})

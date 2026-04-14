@@ -24,12 +24,19 @@ class GraphState(TypedDict):
     """
 
     # ── Core inputs ────────────────────────────────────────────────────────────
+    # Original user input — preserved for logging and reference.
     user_query: str
+    # Enriched query produced by QueryHandlerAgent — merges current input with
+    # relevant history context. Downstream agents use this instead of user_query.
+    clarified_user_query: Optional[str]
 
     # ── Routing ────────────────────────────────────────────────────────────────
     # Classified intent from QueryHandlerAgent.
     # Values: "research" | "blog" | "linkedin" | "image" | "strategy" | "multi"
     intent: Optional[str]
+    # True when QueryHandlerAgent detects the user is refining/extending prior output.
+    # Downstream agents use this to patch existing output rather than regenerate.
+    is_refinement: bool
 
     # ── Agent outputs ──────────────────────────────────────────────────────────
     research: Optional[ResearchResult]

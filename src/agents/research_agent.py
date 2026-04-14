@@ -28,6 +28,30 @@ Rules:
 - Respond with ONLY the JSON object, no extra text
 """
 
+_REFINEMENT_SYNTHESIS_PROMPT = """You are a professional research analyst.
+
+You previously produced the research summary below. The user now wants to EXTEND it with additional information.
+
+Existing research summary:
+{existing_summary}
+
+Existing key findings:
+{existing_findings}
+
+New search results for the extension topic: "{topic}"
+{raw_results}
+
+Produce an UPDATED research summary that merges the original with the new information.
+Your output must be valid JSON with this exact structure:
+{{
+  "summary": "<updated 2-3 paragraph summary covering both original and new topic>",
+  "key_findings": ["<finding 1>", "<finding 2>", ...],
+  "sources": ["<url1>", "<url2>", ...]
+}}
+
+Respond with ONLY the JSON object, no extra text.
+"""
+
 
 class ResearchAgent(BaseAgent):
     """
@@ -48,11 +72,14 @@ class ResearchAgent(BaseAgent):
         return "research_agent"
 
     def run(self, state: dict[str, Any]) -> dict[str, Any]:
-        topic: str = state.get("user_query", "").strip()
+        topic: str = (state.get("clarified_user_query") or state.get("user_query", "")).strip()
+        is_refinement: bool = state.get("is_refinement", False)
+        existing_research: ResearchResult | None = state.get("research") if is_refinement else None
+
         if not topic:
             return {"error": "ResearchAgent: no topic provided."}
 
-        logger.info("ResearchAgent: researching topic=%r", topic[:80])
+        logger.info("ResearchAgent: researching topic=%r | is_refinement=%s", topic[:80], is_refinement)
 
         try:
             # Step 1: Search
@@ -60,8 +87,20 @@ class ResearchAgent(BaseAgent):
             raw_results = self._format_results(results)
             sources = [r.get("url", "") for r in results if r.get("url")]
 
-            # Step 2: Synthesise with LLM
-            prompt = _SYNTHESIS_PROMPT.format(topic=topic, raw_results=raw_results)
+            # Step 2: Synthesise — merge with existing if refinement
+            if is_refinement and existing_research:
+                existing_findings_str = "\n".join(f"- {f}" for f in existing_research.key_findings)
+                prompt = _REFINEMENT_SYNTHESIS_PROMPT.format(
+                    topic=topic,
+                    raw_results=raw_results,
+                    existing_summary=existing_research.summary,
+                    existing_findings=existing_findings_str,
+                )
+                all_sources = list(dict.fromkeys(existing_research.sources + sources))
+            else:
+                prompt = _SYNTHESIS_PROMPT.format(topic=topic, raw_results=raw_results)
+                all_sources = sources
+
             raw = self._llm.generate(prompt, config={"run_name": "research_agent~run"})
             parsed = self._parse_json(raw)
 
@@ -69,7 +108,7 @@ class ResearchAgent(BaseAgent):
                 topic=topic,
                 summary=parsed.get("summary", raw),
                 key_findings=parsed.get("key_findings", []),
-                sources=parsed.get("sources", sources),
+                sources=parsed.get("sources", all_sources),
             )
 
             logger.info(

@@ -21,6 +21,21 @@ Rules:
 - Respond with ONLY the optimised prompt text — no explanation, no JSON
 """
 
+_REFINEMENT_PROMPT_OPTIMIZER = """You are a DALL-E 3 prompt engineer.
+
+The user previously requested an image and now wants to UPDATE it.
+
+Previous optimised prompt: {existing_prompt}
+Update instruction: {user_request}
+Style: {style}
+
+Produce an UPDATED DALL-E 3 prompt that incorporates the update instruction.
+Rules:
+- Keep the prompt under 400 characters
+- Include the style: {style}
+- Respond with ONLY the updated prompt text — no explanation, no JSON
+"""
+
 
 class ImageGeneratorAgent(BaseAgent):
     """
@@ -41,20 +56,28 @@ class ImageGeneratorAgent(BaseAgent):
         return "image_generator"
 
     def run(self, state: dict[str, Any]) -> dict[str, Any]:
-        user_request: str = state.get("user_query", "").strip()
+        user_request: str = (state.get("clarified_user_query") or state.get("user_query", "")).strip()
         style: str = state.get("image_style", "photorealistic")
         size: str = state.get("image_size", "1024x1024")
+        is_refinement: bool = state.get("is_refinement", False)
+        existing_result: ImageResult | None = state.get("image_result") if is_refinement else None
 
         if not user_request:
             return {"error": "ImageGeneratorAgent: no image request provided."}
 
-        logger.info("ImageGeneratorAgent: request=%r | style=%s", user_request[:60], style)
+        logger.info("ImageGeneratorAgent: request=%r | style=%s | is_refinement=%s", user_request[:60], style, is_refinement)
 
         try:
-            # Step 1: Optimise the prompt with the LLM
-            optimiser_prompt = _PROMPT_OPTIMIZER.format(
-                user_request=user_request, style=style
-            )
+            if is_refinement and existing_result:
+                optimiser_prompt = _REFINEMENT_PROMPT_OPTIMIZER.format(
+                    user_request=user_request,
+                    style=style,
+                    existing_prompt=existing_result.prompt_used,
+                )
+            else:
+                optimiser_prompt = _PROMPT_OPTIMIZER.format(
+                    user_request=user_request, style=style
+                )
             optimised_prompt: str = self._llm.generate(
                 optimiser_prompt,
                 config={"run_name": "image_prompt_optimizer~run"},

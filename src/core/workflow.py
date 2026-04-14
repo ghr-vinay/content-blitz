@@ -80,7 +80,9 @@ def run(
     # Build the initial LangGraph state
     initial_state: GraphState = {
         "user_query": user_query,
+        "clarified_user_query": None,
         "intent": None,
+        "is_refinement": False,
         "research": None,
         "blog_post": None,
         "linkedin_post": None,
@@ -112,7 +114,9 @@ def _graph_state_to_agent_state(state: GraphState) -> AgentState:
     """Convert LangGraph's TypedDict state into the typed AgentState Pydantic model."""
     return AgentState(
         user_query=state.get("user_query", ""),
+        clarified_user_query=state.get("clarified_user_query"),
         intent=state.get("intent"),
+        is_refinement=state.get("is_refinement", False),
         research=state.get("research"),
         blog_post=state.get("blog_post"),
         linkedin_post=state.get("linkedin_post"),

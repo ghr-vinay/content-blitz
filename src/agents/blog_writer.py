@@ -35,6 +35,32 @@ Writing guidelines:
 - Respond with ONLY the JSON object, no extra text
 """
 
+_REFINEMENT_BLOG_PROMPT = """You are an expert SEO content writer.
+
+You previously wrote the blog post below. The user wants to UPDATE it with new content.
+
+Existing blog post:
+Title: {existing_title}
+Content:
+{existing_content}
+
+Updated topic / instruction: {topic}
+
+{research_context}
+
+Produce an UPDATED version of the blog post that incorporates the new instruction.
+Your response must be valid JSON with this exact structure:
+{{
+  "title": "<updated title if needed>",
+  "meta_description": "<updated meta description>",
+  "keywords": ["<keyword1>", ...],
+  "headers": ["<H2 section title 1>", ...],
+  "content": "<full updated blog post in Markdown>"
+}}
+
+Respond with ONLY the JSON object, no extra text.
+"""
+
 _RESEARCH_CONTEXT_TMPL = """
 Research context (use this as factual foundation):
 Summary: {summary}
@@ -64,13 +90,15 @@ class BlogWriterAgent(BaseAgent):
         return "blog_writer"
 
     def run(self, state: dict[str, Any]) -> dict[str, Any]:
-        topic: str = state.get("user_query", "").strip()
+        topic: str = (state.get("clarified_user_query") or state.get("user_query", "")).strip()
         research: ResearchResult | None = state.get("research")
+        is_refinement: bool = state.get("is_refinement", False)
+        existing_blog: BlogPost | None = state.get("blog_post") if is_refinement else None
 
         if not topic:
             return {"error": "BlogWriterAgent: no topic provided."}
 
-        logger.info("BlogWriterAgent: writing blog for topic=%r", topic[:80])
+        logger.info("BlogWriterAgent: writing blog | topic=%r | is_refinement=%s", topic[:80], is_refinement)
 
         research_context = ""
         if research:
@@ -81,7 +109,15 @@ class BlogWriterAgent(BaseAgent):
                 sources=", ".join(research.sources),
             )
 
-        prompt = _BLOG_PROMPT.format(topic=topic, research_context=research_context)
+        if is_refinement and existing_blog:
+            prompt = _REFINEMENT_BLOG_PROMPT.format(
+                topic=topic,
+                existing_title=existing_blog.title,
+                existing_content=existing_blog.content,
+                research_context=research_context,
+            )
+        else:
+            prompt = _BLOG_PROMPT.format(topic=topic, research_context=research_context)
 
         try:
             raw = self._llm.generate(prompt, config={"run_name": "blog_writer~run"})

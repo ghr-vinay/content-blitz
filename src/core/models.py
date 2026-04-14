@@ -62,7 +62,9 @@ class AgentState(BaseModel):
     """
 
     user_query: str = ""
+    clarified_user_query: Optional[str] = None  # enriched cumulative query from QueryHandlerAgent
     intent: Optional[str] = None          # classified intent from QueryHandlerAgent
+    is_refinement: bool = False            # True when user is iterating on prior output
     research: Optional[ResearchResult] = None
     blog_post: Optional[BlogPost] = None
     linkedin_post: Optional[LinkedInPost] = None

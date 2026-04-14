@@ -16,6 +16,11 @@ logger = get_logger(__name__)
 # Valid single-intent values the classifier may emit
 _VALID_INTENTS = {"research", "blog", "linkedin", "image", "strategy", "multi"}
 
+_REFINEMENT_SIGNALS = (
+    "also", "additionally", "include", "add", "update", "change", "modify",
+    "make it", "now write", "rewrite", "expand", "extend", "improve", "revise",
+)
+
 _SYSTEM_PROMPT = """You are a routing assistant for ContentBlitz, an AI content marketing system.
 
 Classify the user's request into EXACTLY ONE of these intents:
@@ -27,17 +32,23 @@ Classify the user's request into EXACTLY ONE of these intents:
 - multi      → user wants research AND one or more content formats (blog, linkedin, image)
 
 Rules:
-1. Reply with ONLY a JSON object: {"intent": "<value>", "clarified_query": "<cleaned user query>"}
+1. Reply with ONLY a JSON object:
+   {"intent": "<value>", "clarified_query": "<full cumulative query>", "is_refinement": <true|false>}
 2. If the request is ambiguous, default to "research".
-3. "multi" applies when the user explicitly asks for multiple output formats or says things like
-   "research X and write a blog about it".
+3. "multi" applies when the user explicitly asks for multiple output formats.
 4. Use the conversation history (if provided) to resolve pronouns and follow-up references
    (e.g. "now write a blog about that" → infer topic from prior turns).
+5. "clarified_query" must always be the FULL cumulative intent — merge prior topic with
+   the new instruction when refining (e.g. old: "AI trends 2024", new: "also include healthcare"
+   → clarified_query: "AI trends 2024, including healthcare AI applications").
+6. Set "is_refinement": true when the user is extending or updating prior output
+   (keywords: also, add, include, update, change, make it, expand, revise, etc.).
+   Set "is_refinement": false for fresh, unrelated requests.
 
 Examples:
-- "Write me a blog about LangGraph" → {"intent": "blog", "clarified_query": "Write a blog post about LangGraph"}
-- "Research the latest AI trends and make a LinkedIn post" → {"intent": "multi", "clarified_query": "AI trends 2025"}
-- "Generate an image of a futuristic city" → {"intent": "image", "clarified_query": "futuristic city"}
+- "Write me a blog about LangGraph" → {"intent": "blog", "clarified_query": "LangGraph deep dive", "is_refinement": false}
+- "also include healthcare AI trends" (after prior research) → {"intent": "multi", "clarified_query": "AI trends 2024, including healthcare AI", "is_refinement": true}
+- "Generate an image of a robot doctor" → {"intent": "image", "clarified_query": "robot doctor, futuristic medical setting", "is_refinement": false}
 """
 
 
@@ -85,10 +96,21 @@ class QueryHandlerAgent(BaseAgent):
                 )
                 intent = "research"
 
-            logger.info("QueryHandlerAgent: intent=%s", intent)
+            is_refinement: bool = bool(parsed.get("is_refinement", False))
+
+            # Fast-path heuristic: override to True if message contains refinement signals
+            # (guards against LLM missing the flag on obvious follow-ups)
+            if not is_refinement and history_block:
+                lower = user_query.lower()
+                if any(signal in lower for signal in _REFINEMENT_SIGNALS):
+                    is_refinement = True
+
+            logger.info("QueryHandlerAgent: intent=%s | is_refinement=%s", intent, is_refinement)
             return {
                 "intent": intent,
-                "user_query": clarified,
+                "user_query": user_query,          # preserve original
+                "clarified_user_query": clarified, # enriched cumulative query
+                "is_refinement": is_refinement,
                 "error": None,
             }
 
