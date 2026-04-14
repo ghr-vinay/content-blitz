@@ -29,25 +29,32 @@ Classify the user's request into EXACTLY ONE of these intents:
 - linkedin   → user wants a LinkedIn post written
 - image      → user wants an image generated
 - strategy   → user wants a content strategy or plan
-- multi      → user wants research AND one or more content formats (blog, linkedin, image)
+- multi      → user wants research AND one or more content formats IN THE SAME REQUEST
 
 Rules:
 1. Reply with ONLY a JSON object:
    {"intent": "<value>", "clarified_query": "<full cumulative query>", "is_refinement": <true|false>}
 2. If the request is ambiguous, default to "research".
-3. "multi" applies when the user explicitly asks for multiple output formats.
-4. Use the conversation history (if provided) to resolve pronouns and follow-up references
-   (e.g. "now write a blog about that" → infer topic from prior turns).
-5. "clarified_query" must always be the FULL cumulative intent — merge prior topic with
-   the new instruction when refining (e.g. old: "AI trends 2024", new: "also include healthcare"
-   → clarified_query: "AI trends 2024, including healthcare AI applications").
+3. "multi" applies ONLY when the CURRENT message explicitly asks for multiple output formats
+   in a single request (e.g. "research X and write a blog about it").
+   A research request that follows a prior LinkedIn post is still just "research" — do NOT
+   inherit prior output types from history as the current intent.
+4. Use conversation history ONLY to resolve topic references and pronouns
+   (e.g. "research about this" after a LinkedIn post about video editing → clarified_query: "video editing software programs").
+   Do NOT use history to infer that the user also wants the same output types they asked for before.
+5. "clarified_query" must contain the FULL topic — merge the prior topic with the current
+   request when needed to resolve pronouns (e.g. "this", "that", "it").
+   But NEVER add output format types (blog/linkedin/image) to clarified_query unless the
+   current message explicitly requests them.
 6. Set "is_refinement": true when the user is extending or updating prior output
    (keywords: also, add, include, update, change, make it, expand, revise, etc.).
-   Set "is_refinement": false for fresh, unrelated requests.
+   Set "is_refinement": false for fresh requests or topic changes.
 
 Examples:
 - "Write me a blog about LangGraph" → {"intent": "blog", "clarified_query": "LangGraph deep dive", "is_refinement": false}
-- "also include healthcare AI trends" (after prior research) → {"intent": "multi", "clarified_query": "AI trends 2024, including healthcare AI", "is_refinement": true}
+- "research what software is available for this" (after LinkedIn post about video editing) → {"intent": "research", "clarified_query": "video editing software programs", "is_refinement": false}
+- "research AI trends and also write a blog about it" → {"intent": "multi", "clarified_query": "AI trends 2024", "is_refinement": false}
+- "also include healthcare AI trends" (after prior research on AI) → {"intent": "research", "clarified_query": "AI trends 2024, including healthcare AI", "is_refinement": true}
 - "Generate an image of a robot doctor" → {"intent": "image", "clarified_query": "robot doctor, futuristic medical setting", "is_refinement": false}
 """
 

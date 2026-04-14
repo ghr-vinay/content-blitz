@@ -16,15 +16,19 @@ from src.utils.logger import get_logger
 logger = get_logger(__name__)
 
 _BANNER = """
-╔══════════════════════════════════════════════╗
-║         ContentBlitz  —  CLI Mode            ║
-║  AI Content Marketing Assistant              ║
-╠══════════════════════════════════════════════╣
-║  Commands:                                   ║
-║    /quit  or  /exit  — exit                  ║
-║    /clear            — clear history         ║
-║    /help             — show this message     ║
-╚══════════════════════════════════════════════╝
+╔══════════════════════════════════════════════════════════════════════════╗
+║                       ContentBlitz  —  CLI Mode                          ║
+║                AI Content Marketing Assistant                            ║
+╠══════════════════════════════════════════════════════════════════════════╣
+║                                                                          ║
+║  I can help you research topics, write SEO blogs/LinkedIn posts,         ║
+║  generate images, and create content strategies!                         ║
+║                                                                          ║
+║  Commands:                                                               ║
+║    /quit  or  /exit  — exit                                              ║
+║    /clear            — clear history                                     ║
+║    /help             — show this banner                                  ║
+╚══════════════════════════════════════════════════════════════════════════╝
 """
 
 _INTENT_LABELS = {
