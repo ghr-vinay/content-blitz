@@ -88,6 +88,7 @@ def run(
         "linkedin_post": None,
         "image_result": None,
         "content_strategy": None,
+        "fallback_message": None,
         "messages": [*history_messages, HumanMessage(content=user_query)],
         "error": None,
         # Pass configuration hints as declared GraphState fields
@@ -125,6 +126,7 @@ def _graph_state_to_agent_state(state: GraphState) -> AgentState:
         linkedin_post=state.get("linkedin_post"),
         image_result=state.get("image_result"),
         content_strategy=state.get("content_strategy"),
+        fallback_message=state.get("fallback_message"),
         conversation_history=[
             {
                 "role": "human" if isinstance(m, HumanMessage) else "ai",

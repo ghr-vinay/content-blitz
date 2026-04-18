@@ -16,6 +16,7 @@ from typing import Any
 
 from src.agents.blog_writer import BlogWriterAgent
 from src.agents.content_strategist import ContentStrategistAgent
+from src.agents.fallback_agent import FallbackAgent
 from src.agents.image_generator import ImageGeneratorAgent
 from src.agents.linkedin_writer import LinkedInWriterAgent
 from src.agents.query_handler import QueryHandlerAgent
@@ -67,6 +68,7 @@ def build_app(config: Config | None = None) -> Any:
     linkedin_writer   = LinkedInWriterAgent(llm=llm)
     image_generator   = ImageGeneratorAgent(image_tool=image_tool, llm=llm)
     content_strategist = ContentStrategistAgent(llm=llm)
+    fallback_agent    = FallbackAgent(llm=llm)
 
     logger.info("Router: all agents constructed — wiring graph")
 
@@ -78,6 +80,7 @@ def build_app(config: Config | None = None) -> Any:
         linkedin_writer_fn    = linkedin_writer.run,
         image_generator_fn    = image_generator.run,
         content_strategist_fn = content_strategist.run,
+        fallback_agent_fn     = fallback_agent.run,
     )
 
     logger.info("Router: graph compiled and ready")

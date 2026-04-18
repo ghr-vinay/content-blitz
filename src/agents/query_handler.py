@@ -14,7 +14,7 @@ _HISTORY_WINDOW = 6
 logger = get_logger(__name__)
 
 # Valid single-intent values the classifier may emit
-_VALID_INTENTS = {"research", "blog", "linkedin", "image", "strategy", "multi"}
+_VALID_INTENTS = {"research", "blog", "linkedin", "image", "strategy", "multi", "off_topic"}
 
 _REFINEMENT_SIGNALS = (
     "also", "additionally", "include", "add", "update", "change", "modify",
@@ -30,11 +30,16 @@ Classify the user's request into EXACTLY ONE of these intents:
 - image      → user wants an image generated
 - strategy   → user wants a content strategy or plan
 - multi      → user wants research AND one or more content formats IN THE SAME REQUEST
+- off_topic  → user's request has nothing to do with content marketing, writing, research, or images
+              (e.g. coding help, maths, personal advice, weather, jokes, general trivia)
 
 Rules:
 1. Reply with ONLY a JSON object:
    {"intent": "<value>", "clarified_query": "<full cumulative query>", "is_refinement": <true|false>}
 2. If the request is ambiguous, default to "research".
+3. Use "off_topic" when the request is clearly unrelated to content marketing,
+   writing, research, or image generation. Err on the side of attempting to help
+   — only use "off_topic" for requests that are obviously out of scope.
 3. "multi" applies ONLY when the CURRENT message explicitly asks for multiple output formats
    in a single request (e.g. "research X and write a blog about it").
    A research request that follows a prior LinkedIn post is still just "research" — do NOT
@@ -56,6 +61,8 @@ Examples:
 - "research AI trends and also write a blog about it" → {"intent": "multi", "clarified_query": "AI trends 2024", "is_refinement": false}
 - "also include healthcare AI trends" (after prior research on AI) → {"intent": "research", "clarified_query": "AI trends 2024, including healthcare AI", "is_refinement": true}
 - "Generate an image of a robot doctor" → {"intent": "image", "clarified_query": "robot doctor, futuristic medical setting", "is_refinement": false}
+- "What is 2 + 2?" → {"intent": "off_topic", "clarified_query": "What is 2 + 2?", "is_refinement": false}
+- "Write me a Python script to scrape Twitter" → {"intent": "off_topic", "clarified_query": "Python script to scrape Twitter", "is_refinement": false}
 """
 
 

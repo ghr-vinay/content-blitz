@@ -207,6 +207,10 @@ def _render_result(result: AgentState) -> None:
         st.error(f"❌ {result.error}")
         return
 
+    if result.fallback_message:
+        st.info(f"💬 {result.fallback_message}")
+        return
+
     intent_badge = {
         "research": "🔍 Research",
         "blog": "📝 Blog",

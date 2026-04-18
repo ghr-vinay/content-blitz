@@ -74,4 +74,5 @@ class AgentState(BaseModel):
     image_result: Optional[ImageResult] = None
     conversation_history: list[dict] = Field(default_factory=list)
     content_strategy: Optional[str] = None
+    fallback_message: Optional[str] = None
     error: Optional[str] = None

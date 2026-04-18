@@ -59,5 +59,9 @@ class GraphState(TypedDict):
     image_style: str
     image_size: str
 
+    # ── Fallback output ────────────────────────────────────────────────────────
+    # Set by FallbackAgent when the user's request is out of scope.
+    fallback_message: Optional[str]
+
     # ── Error handling ─────────────────────────────────────────────────────────
     error: Optional[str]

@@ -47,7 +47,10 @@ def _print_result(result: AgentState) -> None:
     if result.error:
         print(f"❌  Error: {result.error}")
         return
-
+    if result.fallback_message:
+        print(f"\n💬  {result.fallback_message}")
+        print("\n" + "─" * 50)
+        return
     intent_label = _INTENT_LABELS.get(result.intent or "", f"({result.intent})")
     print(f"━━━  {intent_label}  ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━")
 

@@ -150,58 +150,68 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 
 ---
 
-### Phase 9: LLM Evaluation (LLM-as-Judge)
+### Phase 9: FallbackAgent & Off-Topic Handling
 
-- [ ] **9.1** Implement `src/utils/llm_eval.py` — LLM-as-Judge evaluator that scores generated content on relevance, coherence, accuracy, and completeness
-- [ ] **9.2** Define evaluation criteria/rubrics for each content type (blog, LinkedIn post, research summary)
-- [ ] **9.3** Integrate evaluation into the workflow — auto-score outputs after generation and surface scores in the UI
-- [ ] **9.4** Log evaluation scores to LangSmith for tracking quality trends over time
-- [ ] **9.5** _(Optional)_ Implement pairwise comparison evaluator — compare two versions of content and pick the better one
-
----
-
-### Phase 10: Observability & Monitoring Polish
-
-- [ ] **10.1** Add custom LangSmith metadata to traces — tag by agent type, content type, user session
-- [ ] **10.2** Track latency per agent node — identify slow steps in the graph
-- [ ] **10.3** Track token usage and estimated cost per request via LangSmith
-- [ ] **10.4** Set up LangSmith dataset + evaluator runs for regression testing content quality
+- [x] **9.1** Create `src/agents/fallback_agent.py` — `FallbackAgent` that generates a polite LLM response telling the user their request is out of scope or unclear, and redirects them to ContentBlitz's supported capabilities
+- [x] **9.2** Add `off_topic` intent to `QueryHandlerAgent` — update `_VALID_INTENTS`, `_SYSTEM_PROMPT` (Rule 3 + examples) so the classifier can detect and route off-topic or ambiguous requests
+- [x] **9.3** Add `fallback_message: Optional[str]` to `GraphState` and `AgentState`; initialise to `None` in `initial_state`; map through `_graph_state_to_agent_state`
+- [x] **9.4** Wire `fallback_agent` node into `langgraph_workflow.py` — register node, add `"off_topic"` branch in `_INTENT_TO_NODE`, add terminal edge to `END`; inject via `router.py`
+- [x] **9.5** Render `fallback_message` in CLI (`cli_app.py`) and Streamlit (`streamlit_app.py`) — early-return path before normal content renderers
 
 ---
 
-### Phase 11: Testing
+### Phase 10: LLM Evaluation (LLM-as-Judge)
 
-- [ ] **11.1** Write unit tests for each agent (`tests/unit/`) — inject mock tools/LLM via constructor (easy to test thanks to **DIP**), test prompt construction, validate output Pydantic models
-- [ ] **11.2** Write unit tests for integration clients — test each implements its base interface contract, test retry logic, error handling
-- [ ] **11.3** Write unit tests for LLM eval module — test scoring logic with canned inputs
-- [ ] **11.4** Write integration tests (`tests/integration/`) — test full agent → tool → LLM pipeline
-- [ ] **11.5** Write E2E tests (`tests/e2e/`) — test full workflow from user query → routed agent → generated content → eval score
-
----
-
-### Phase 12: Documentation
-
-- [ ] **12.1** Write comprehensive `README.md` — overview, architecture, setup instructions, usage examples, troubleshooting
-- [ ] **12.2** Write `docs/architecture.md` — system architecture decisions, LangGraph design, agent design rationale
-- [ ] **12.3** Write `docs/api_documentation.md` — document each agent's input/output schema, tool configurations
-- [ ] **12.4** Add inline docstrings to all public functions and classes
+- [ ] **10.1** Implement `src/utils/llm_eval.py` — LLM-as-Judge evaluator that scores generated content on relevance, coherence, accuracy, and completeness
+- [ ] **10.2** Define evaluation criteria/rubrics for each content type (blog, LinkedIn post, research summary)
+- [ ] **10.3** Integrate evaluation into the workflow — auto-score outputs after generation and surface scores in the UI
+- [ ] **10.4** Log evaluation scores to LangSmith for tracking quality trends over time
+- [ ] **10.5** _(Optional)_ Implement pairwise comparison evaluator — compare two versions of content and pick the better one
 
 ---
 
-### Phase 13 (OPTIONAL): Advanced Features & Deployment
+### Phase 11: Observability & Monitoring Polish
 
-- [ ] **13.1** Add multi-turn conversation refinement — "make it more formal", "add more statistics", etc.
-- [ ] **13.2** Add content series generation — create related content pieces for a campaign from one topic
-- [ ] **13.3** Brand voice consistency — apply tone/style guidelines across all output
-- [ ] **13.4** Content quality enhancement pipeline — post-generation optimization pass
-- [ ] **13.5** SEO scoring — rate blog output on keyword density, readability, structure
-- [ ] **13.6** Platform-specific formatting validation (LinkedIn char limits, blog structure)
-- [ ] **13.7** Response caching layer to reduce redundant API calls and control costs
-- [ ] **13.8** `docker-compose.yml` + Dockerfile for containerized deployment
-- [ ] **13.9** Write `docs/deployment_guide.md` — Docker setup, env configuration, cloud deployment options
-- [ ] **13.10** CMS integration — publish directly to WordPress/Ghost/Medium
-- [ ] **13.11** Social media scheduling — integrate with Buffer/Hootsuite
-- [ ] **13.12** Fact-checking heuristics — cross-reference claims across multiple sources
+- [ ] **11.1** Add custom LangSmith metadata to traces — tag by agent type, content type, user session
+- [ ] **11.2** Track latency per agent node — identify slow steps in the graph
+- [ ] **11.3** Track token usage and estimated cost per request via LangSmith
+- [ ] **11.4** Set up LangSmith dataset + evaluator runs for regression testing content quality
+
+---
+
+### Phase 12: Testing
+
+- [ ] **12.1** Write unit tests for each agent (`tests/unit/`) — inject mock tools/LLM via constructor (easy to test thanks to **DIP**), test prompt construction, validate output Pydantic models
+- [ ] **12.2** Write unit tests for integration clients — test each implements its base interface contract, test retry logic, error handling
+- [ ] **12.3** Write unit tests for LLM eval module — test scoring logic with canned inputs
+- [ ] **12.4** Write integration tests (`tests/integration/`) — test full agent → tool → LLM pipeline
+- [ ] **12.5** Write E2E tests (`tests/e2e/`) — test full workflow from user query → routed agent → generated content → eval score
+
+---
+
+### Phase 13: Documentation
+
+- [ ] **13.1** Write comprehensive `README.md` — overview, architecture, setup instructions, usage examples, troubleshooting
+- [ ] **13.2** Write `docs/architecture.md` — system architecture decisions, LangGraph design, agent design rationale
+- [ ] **13.3** Write `docs/api_documentation.md` — document each agent's input/output schema, tool configurations
+- [ ] **13.4** Add inline docstrings to all public functions and classes
+
+---
+
+### Phase 14 (OPTIONAL): Advanced Features & Deployment
+
+- [ ] **14.1** Add multi-turn conversation refinement — "make it more formal", "add more statistics", etc.
+- [ ] **14.2** Add content series generation — create related content pieces for a campaign from one topic
+- [ ] **14.3** Brand voice consistency — apply tone/style guidelines across all output
+- [ ] **14.4** Content quality enhancement pipeline — post-generation optimization pass
+- [ ] **14.5** SEO scoring — rate blog output on keyword density, readability, structure
+- [ ] **14.6** Platform-specific formatting validation (LinkedIn char limits, blog structure)
+- [ ] **14.7** Response caching layer to reduce redundant API calls and control costs
+- [ ] **14.8** `docker-compose.yml` + Dockerfile for containerized deployment
+- [ ] **14.9** Write `docs/deployment_guide.md` — Docker setup, env configuration, cloud deployment options
+- [ ] **14.10** CMS integration — publish directly to WordPress/Ghost/Medium
+- [ ] **14.11** Social media scheduling — integrate with Buffer/Hootsuite
+- [ ] **14.12** Fact-checking heuristics — cross-reference claims across multiple sources
 
 ---
 
@@ -216,11 +226,12 @@ Phase 1  (Project Setup)
   → Phase 6  (Router & Orchestration)
   → Phase 7  (Context-Aware Query Enrichment)
   → Phase 8  (Streamlit UI)
-  → Phase 9  (LLM Evaluation)
-  → Phase 10 (Observability & Monitoring Polish)
-  → Phase 11 (Testing)
-  → Phase 12 (Documentation)
-  → Phase 13 (Optional: Advanced Features & Deployment)
+  → Phase 9  (FallbackAgent & Off-Topic Handling)
+  → Phase 10 (LLM Evaluation)
+  → Phase 11 (Observability & Monitoring Polish)
+  → Phase 12 (Testing)
+  → Phase 13 (Documentation)
+  → Phase 14 (Optional: Advanced Features & Deployment)
 ```
 
-**Total: ~55 core tasks + ~12 optional tasks across 13 phases**
+**Total: ~60 core tasks + ~12 optional tasks across 14 phases**

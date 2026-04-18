@@ -17,6 +17,7 @@ _INTENT_TO_NODE: dict[str, list[str]] = {
     "strategy":  ["content_strategist"],
     # "multi" triggers research first, then all content agents
     "multi":     ["research_agent"],
+    "off_topic": ["fallback_agent"],
 }
 
 
@@ -104,6 +105,7 @@ def build_graph(
     linkedin_writer_fn=None,
     image_generator_fn=None,
     content_strategist_fn=None,
+    fallback_agent_fn=None,
 ) -> Any:
     """
     Build and compile the ContentBlitz LangGraph StateGraph.
@@ -128,6 +130,7 @@ def build_graph(
     graph.add_node("linkedin_writer",   linkedin_writer_fn   or _placeholder_node("linkedin_writer"))
     graph.add_node("image_generator",   image_generator_fn   or _placeholder_node("image_generator"))
     graph.add_node("content_strategist",content_strategist_fn or _placeholder_node("content_strategist"))
+    graph.add_node("fallback_agent",    fallback_agent_fn    or _placeholder_node("fallback_agent"))
 
     # Entry point
     graph.set_entry_point("query_handler")
@@ -142,6 +145,7 @@ def build_graph(
             "linkedin_writer":    "linkedin_writer",
             "image_generator":    "image_generator",
             "content_strategist": "content_strategist",
+            "fallback_agent":     "fallback_agent",
             END:                   END,
         },
     )
@@ -176,6 +180,7 @@ def build_graph(
     # Terminal nodes always go to END
     graph.add_edge("image_generator",    END)
     graph.add_edge("content_strategist", END)
+    graph.add_edge("fallback_agent",     END)
 
     compiled = graph.compile()
     logger.info("ContentBlitz graph compiled successfully")
