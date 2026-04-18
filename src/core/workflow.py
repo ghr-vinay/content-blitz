@@ -90,10 +90,10 @@ def run(
         "content_strategy": None,
         "messages": [*history_messages, HumanMessage(content=user_query)],
         "error": None,
-        # Pass optional hints as top-level keys; agents read these from state
-        "image_style": image_style,           # type: ignore[typeddict-item]
-        "image_size": image_size,             # type: ignore[typeddict-item]
-        "linkedin_post_type": linkedin_post_type,  # type: ignore[typeddict-item]
+        # Pass configuration hints as declared GraphState fields
+        "image_style": image_style,
+        "image_size": image_size,
+        "linkedin_post_type": linkedin_post_type,
     }
 
     try:
@@ -117,6 +117,9 @@ def _graph_state_to_agent_state(state: GraphState) -> AgentState:
         clarified_user_query=state.get("clarified_user_query"),
         intent=state.get("intent"),
         is_refinement=state.get("is_refinement", False),
+        linkedin_post_type=state.get("linkedin_post_type", "general"),
+        image_style=state.get("image_style", "photorealistic"),
+        image_size=state.get("image_size", "1024x1024"),
         research=state.get("research"),
         blog_post=state.get("blog_post"),
         linkedin_post=state.get("linkedin_post"),

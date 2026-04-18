@@ -131,6 +131,7 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 
 - [x] **7.1** Add `clarified_user_query: Optional[str]` to `GraphState` and `AgentState` — enriched cumulative query produced by `QueryHandlerAgent`; downstream agents use this instead of `user_query` (original is preserved for logging)
 - [x] **7.2** Add `is_refinement: bool` to `GraphState` and `AgentState` — `True` when `QueryHandlerAgent` detects the user is extending or updating prior output (keywords: also, add, include, update, expand, revise, etc.)
+- [x] **7.2.1** *(Bug fix)* Declare `linkedin_post_type`, `image_style`, and `image_size` as proper fields in `GraphState` — previously injected with `# type: ignore[typeddict-item]` as undeclared keys, which caused LangGraph to silently drop them after the first node executed; also added to `AgentState` and wired through `_graph_state_to_agent_state`
 - [x] **7.3** Update `QueryHandlerAgent` to output `clarified_user_query` (full cumulative merged topic) and `is_refinement`; add fast-path heuristic to catch obvious refinement signals the LLM might miss
 - [x] **7.4** Update `ResearchAgent` — when `is_refinement=True`, merge new search results with existing `ResearchResult` using a dedicated refinement synthesis prompt instead of regenerating from scratch
 - [x] **7.5** Update `BlogWriterAgent` — when `is_refinement=True`, pass existing `BlogPost` content into a refinement prompt to patch/extend the post rather than rewrite it
@@ -140,12 +141,12 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 
 ### Phase 8: Streamlit Web Interface
 
-- [ ] **8.1** Implement `src/web_app/streamlit_app.py` — main chat-based UI with conversation history
-- [ ] **8.2** Build chat input component — natural language input with send button
-- [ ] **8.3** Build content display components — render blog posts, LinkedIn posts, images, research summaries with proper formatting
-- [ ] **8.4** Add sidebar controls — select content type, view agent routing info
-- [ ] **8.5** Handle loading states and streaming responses for long-running agent tasks
-- [ ] **8.6** Add export/download buttons — download generated content as markdown or copy to clipboard
+- [x] **8.1** Implement `src/web_app/streamlit_app.py` — main chat-based UI with conversation history
+- [x] **8.2** Build chat input component — natural language input with send button
+- [x] **8.3** Build content display components — render blog posts, LinkedIn posts, images, research summaries with proper formatting
+- [x] **8.4** Add sidebar controls — image style, LinkedIn post type, image size selectors; clear conversation button
+- [x] **8.5** Handle loading states — spinner during agent workflow execution
+- [x] **8.6** Add export/download buttons — download generated content as markdown or copy to clipboard
 
 ---
 

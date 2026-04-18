@@ -65,6 +65,9 @@ class AgentState(BaseModel):
     clarified_user_query: Optional[str] = None  # enriched cumulative query from QueryHandlerAgent
     intent: Optional[str] = None          # classified intent from QueryHandlerAgent
     is_refinement: bool = False            # True when user is iterating on prior output
+    linkedin_post_type: str = "general"
+    image_style: str = "photorealistic"
+    image_size: str = "1024x1024"
     research: Optional[ResearchResult] = None
     blog_post: Optional[BlogPost] = None
     linkedin_post: Optional[LinkedInPost] = None

@@ -52,5 +52,12 @@ class GraphState(TypedDict):
     # ── Content strategy output ───────────────────────────────────────────────
     content_strategy: Optional[str]
 
+    # ── Agent configuration hints ───────────────────────────────────────────────
+    # Passed in at workflow entry and preserved throughout the graph so every
+    # node can read them without being re-injected at each step.
+    linkedin_post_type: str
+    image_style: str
+    image_size: str
+
     # ── Error handling ─────────────────────────────────────────────────────────
     error: Optional[str]
