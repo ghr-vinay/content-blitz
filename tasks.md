@@ -164,11 +164,13 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 
 > Uses [DeepEval](https://github.com/confident-ai/deepeval)'s **GEval** metric — a structured LLM-as-Judge framework where evaluation criteria are defined in plain English and scored by an LLM. More reliable than a hand-rolled judge prompt.
 
-- [ ] **10.1** Add `deepeval` to `requirements.txt`; verify it installs cleanly in the venv
-- [ ] **10.2** Create `src/eval/llm_eval.py` — define `GEval` metric instances (relevance, coherence, accuracy, completeness) and a `evaluate_content(test_case, metrics)` helper that runs `.measure()` and returns scores + reasons
-- [ ] **10.3** Define per-content-type rubrics as plain-English `criteria` strings inside each `GEval` metric (blog, LinkedIn post, research summary) — no raw judge prompts needed
-- [ ] **10.4** After each generation node, create a `LLMTestCase` and call `evaluate_content()` — surface the score + reason in CLI output and Streamlit UI (e.g. a collapsible "Eval Scores" expander)
-- [ ] **10.5** Bridge DeepEval scores into LangSmith — after `.measure()`, call `langsmith_client.create_feedback(run_id, key, score, comment)` using the active trace run ID; DeepEval does not push to LangSmith natively so this is explicit glue code (~5 lines)
+- [x] **10.1** Add `deepeval` to `requirements.txt`; verify it installs cleanly in the venv
+- [x] **10.2** Create `src/eval/llm_eval.py` — define `GEval` metric instances (relevance, coherence, accuracy, completeness) and a `evaluate_content(test_case, metrics)` helper that runs `.measure()` and returns scores + reasons
+- [x] **10.3** Define per-content-type rubrics as plain-English `criteria` strings inside each `GEval` metric (blog, LinkedIn post, research summary) — no raw judge prompts needed
+- [x] **10.4** After each generation node, create a `LLMTestCase` and call `evaluate_content()` — surface the score + reason in CLI output and Streamlit UI (collapsible "📊 Eval Scores" expander)
+- [x] **10.5** Bridge DeepEval scores into LangSmith — after `.measure()`, call `langsmith_client.create_feedback(run_id, key, score, comment)` using the active trace run ID captured via `RunCollectorCallbackHandler`; DeepEval does not push to LangSmith natively so this is explicit glue code
+- [x] **10.5.1** *(Improvement)* Drive eval judge `model` and `threshold` from `config/services.yaml` (`eval.model`, `eval.threshold`) via `Config.eval_model` / `Config.eval_threshold` — removes hardcoded values from `llm_eval.py`; injected into `evaluate_agent_state()` from `workflow.py`
+- [x] **10.5.2** *(Bug fix)* `GEval` object has no attribute `passed` in the installed DeepEval version — replaced `metric.passed` with `metric.is_successful()` (stable public API) and added a fallback of `score >= threshold` for forward compatibility
 - [ ] **10.6** _(Optional)_ Pairwise comparison — create two `LLMTestCase` instances (original vs refined) and use a custom `GEval` with a "which is better and why" criterion, or DeepEval's built-in `evaluate()` with both
 
 ---

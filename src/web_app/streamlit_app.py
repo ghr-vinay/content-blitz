@@ -98,7 +98,7 @@ def _render_sidebar() -> dict:
             st.rerun()
 
         st.divider()
-        st.caption("Phases complete: 1–7 ✅")
+        st.caption("Phases complete: 1–10 ✅")
         st.caption("Model: GPT-4o + DALL-E 3")
 
     return {
@@ -202,6 +202,28 @@ def _render_strategy(result: AgentState) -> None:
         )
 
 
+def _render_eval_scores(result: AgentState) -> None:
+    if not result.eval_scores:
+        return
+    with st.expander("📊 Eval Scores (GEval / LLM-as-Judge)", expanded=False):
+        by_type: dict = {}
+        for s in result.eval_scores:
+            by_type.setdefault(s.content_type, []).append(s)
+
+        for ctype, scores in by_type.items():
+            st.markdown(f"**{ctype.upper()}**")
+            for s in scores:
+                col1, col2, col3 = st.columns([2, 1, 5])
+                with col1:
+                    st.markdown(s.metric)
+                with col2:
+                    colour = "green" if s.passed else "orange"
+                    st.markdown(f":{colour}[{s.score:.2f}]")
+                with col3:
+                    st.caption(s.reason)
+            st.divider()
+
+
 def _render_result(result: AgentState) -> None:
     if result.error:
         st.error(f"❌ {result.error}")
@@ -228,6 +250,7 @@ def _render_result(result: AgentState) -> None:
     _render_linkedin(result)
     _render_image(result)
     _render_strategy(result)
+    _render_eval_scores(result)
 
 
 # ── Download helper ────────────────────────────────────────────────────────────

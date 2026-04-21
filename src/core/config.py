@@ -151,3 +151,13 @@ class Config:
     @property
     def image_quality(self) -> str:
         return self._data.get("services", {}).get("image", {}).get("quality", "standard")
+
+    @property
+    def eval_model(self) -> str:
+        return self._data.get("services", {}).get("eval", {}).get("model", "gpt-4o")
+
+    @property
+    def eval_threshold(self) -> float:
+        return float(
+            self._data.get("services", {}).get("eval", {}).get("threshold", 0.5)
+        )

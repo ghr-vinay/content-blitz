@@ -53,6 +53,16 @@ class ImageResult(BaseModel):
     size: str = "1024x1024"
 
 
+class EvalScore(BaseModel):
+    """Output of a single GEval metric run on a piece of generated content."""
+
+    metric: str            # e.g. "Relevance", "Coherence"
+    content_type: str      # "blog" | "linkedin" | "research" | "strategy"
+    score: float           # 0.0 – 1.0
+    reason: str            # LLM-generated explanation of the score
+    passed: bool = False   # True if score >= metric threshold
+
+
 class AgentState(BaseModel):
     """
     Shared LangGraph state passed between all agent nodes.
@@ -75,4 +85,5 @@ class AgentState(BaseModel):
     conversation_history: list[dict] = Field(default_factory=list)
     content_strategy: Optional[str] = None
     fallback_message: Optional[str] = None
+    eval_scores: list[EvalScore] = Field(default_factory=list)
     error: Optional[str] = None

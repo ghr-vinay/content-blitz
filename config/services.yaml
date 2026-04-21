@@ -12,3 +12,7 @@ image:
   provider: dalle3          # primary image provider
   size: "1024x1024"
   quality: standard         # options: standard | hd
+
+eval:
+  model: gpt-4o             # judge model used by DeepEval GEval
+  threshold: 0.5            # pass/fail threshold (0.0–1.0)

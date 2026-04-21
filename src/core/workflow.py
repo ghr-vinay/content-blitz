@@ -15,10 +15,12 @@ SOLID:
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
+from langchain_core.tracers.run_collector import RunCollectorCallbackHandler
 
 from src.core.config import Config
 from src.core.models import AgentState
 from src.core.router import build_app
+from src.eval.llm_eval import evaluate_agent_state
 from src.utils.logger import get_logger
 from src.workflow.state_management import GraphState
 
@@ -98,15 +100,36 @@ def run(
     }
 
     try:
+        run_collector = RunCollectorCallbackHandler()
         final_state: GraphState = app.invoke(
             initial_state,
-            config={"run_name": f"contentblitz/{user_query[:40]}"},
+            config={
+                "run_name": f"contentblitz/{user_query[:40]}",
+                "callbacks": [run_collector],
+            },
         )
+        run_id = str(run_collector.traced_runs[0].id) if run_collector.traced_runs else None
     except Exception as exc:
         logger.exception("Workflow.run failed: %s", exc)
         final_state = {**initial_state, "error": str(exc)}  # type: ignore[assignment]
+        run_id = None
 
     result = _graph_state_to_agent_state(final_state)
+
+    # Run DeepEval GEval scoring (non-fatal — eval failure never blocks content delivery)
+    if not result.error and not result.fallback_message:
+        try:
+            cfg = config or Config.get_instance()
+            scores = evaluate_agent_state(
+                result,
+                run_id=run_id,
+                model=cfg.eval_model,
+                threshold=cfg.eval_threshold,
+            )
+            result = result.model_copy(update={"eval_scores": scores})
+        except Exception as exc:
+            logger.warning("Eval run failed (non-fatal): %s", exc)
+
     _log_result_summary(result)
     return result
 
@@ -127,6 +150,7 @@ def _graph_state_to_agent_state(state: GraphState) -> AgentState:
         image_result=state.get("image_result"),
         content_strategy=state.get("content_strategy"),
         fallback_message=state.get("fallback_message"),
+        eval_scores=[],
         conversation_history=[
             {
                 "role": "human" if isinstance(m, HumanMessage) else "ai",

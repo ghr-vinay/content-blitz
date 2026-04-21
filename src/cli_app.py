@@ -91,6 +91,17 @@ def _print_result(result: AgentState) -> None:
         print(f"\n🗺️   CONTENT STRATEGY\n")
         print(result.content_strategy)
 
+    if result.eval_scores:
+        print(f"\n📊  EVAL SCORES")
+        by_type: dict = {}
+        for s in result.eval_scores:
+            by_type.setdefault(s.content_type, []).append(s)
+        for ctype, scores in by_type.items():
+            print(f"\n  [{ctype.upper()}]")
+            for s in scores:
+                mark = "✓" if s.passed else "✗"
+                print(f"    {mark} {s.metric:<20} {s.score:.2f}  {s.reason[:80]}")
+
     print("\n" + "─" * 50)
 
 
