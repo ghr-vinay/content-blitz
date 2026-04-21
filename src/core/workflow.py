@@ -12,13 +12,14 @@ SOLID:
 - DIP: Depends on build_app() (router abstraction), not on concrete agents.
 """
 
+from concurrent.futures import Future, ThreadPoolExecutor
 from typing import Any
 
 from langchain_core.messages import AIMessage, BaseMessage, HumanMessage
 from langchain_core.tracers.run_collector import RunCollectorCallbackHandler
 
 from src.core.config import Config
-from src.core.models import AgentState
+from src.core.models import AgentState, EvalScore
 from src.core.router import build_app
 from src.eval.llm_eval import evaluate_agent_state
 from src.utils.logger import get_logger
@@ -28,6 +29,9 @@ logger = get_logger(__name__)
 
 # Module-level cached app — built once, reused across all requests (singleton)
 _app: Any = None
+
+# Shared thread pool for background eval runs (daemon threads — exit with process)
+_eval_executor_thread = ThreadPoolExecutor(max_workers=2, thread_name_prefix="cb-eval")
 
 
 def _get_app(config: Config | None = None) -> Any:
@@ -47,29 +51,94 @@ def run(
     config: Config | None = None,
 ) -> AgentState:
     """
-    Run a full ContentBlitz workflow for a user query.
+    Run a full ContentBlitz workflow for a user query (blocking eval).
 
-    This is the primary entrypoint used by the Streamlit UI and tests.
+    Primary entrypoint for the CLI and tests. Eval runs synchronously so the
+    returned AgentState always contains populated eval_scores.
+    """
+    result, run_id = _invoke_workflow(
+        user_query=user_query,
+        image_style=image_style,
+        image_size=image_size,
+        linkedin_post_type=linkedin_post_type,
+        conversation_history=conversation_history,
+        config=config,
+    )
 
-    Args:
-        user_query:           The natural-language request from the user.
-        image_style:          Style hint for image generation (e.g. "photorealistic").
-        image_size:           DALL-E image size (e.g. "1024x1024").
-        linkedin_post_type:   LinkedIn post style hint.
-        conversation_history: Prior turns for multi-turn context.
-        config:               Optional Config override (useful in tests).
+    cfg = config or Config.get_instance()
+    if cfg.eval_enabled and not result.error and not result.fallback_message:
+        try:
+            scores = evaluate_agent_state(
+                result,
+                run_id=run_id,
+                model=cfg.eval_model,
+                threshold=cfg.eval_threshold,
+            )
+            result = result.model_copy(update={"eval_scores": scores})
+        except Exception as exc:
+            logger.warning("Eval run failed (non-fatal): %s", exc)
+
+    _log_result_summary(result)
+    return result
+
+
+def run_non_blocking_eval(
+    user_query: str,
+    *,
+    image_style: str = "photorealistic",
+    image_size: str = "1024x1024",
+    linkedin_post_type: str = "general",
+    conversation_history: list[dict] | None = None,
+    config: Config | None = None,
+) -> tuple[AgentState, "Future[list[EvalScore]] | None"]:
+    """
+    Run workflow and return content immediately; eval runs in a background thread.
 
     Returns:
-        AgentState populated with all outputs produced by the workflow.
+        (result, eval_future) — result has empty eval_scores; caller should
+        resolve eval_future later and merge scores via result.model_copy().
     """
+    result, run_id = _invoke_workflow(
+        user_query=user_query,
+        image_style=image_style,
+        image_size=image_size,
+        linkedin_post_type=linkedin_post_type,
+        conversation_history=conversation_history,
+        config=config,
+    )
+    _log_result_summary(result)
+
+    eval_future: "Future[list[EvalScore]] | None" = None
+    cfg = config or Config.get_instance()
+    if cfg.eval_enabled and not result.error and not result.fallback_message:
+        eval_future = _eval_executor_thread.submit(
+            evaluate_agent_state,
+            result,
+            run_id,
+            cfg.eval_model,
+            cfg.eval_threshold,
+        )
+
+    return result, eval_future
+
+
+def _invoke_workflow(
+    user_query: str,
+    *,
+    image_style: str,
+    image_size: str,
+    linkedin_post_type: str,
+    conversation_history: list[dict] | None,
+    config: Config | None,
+) -> tuple[AgentState, str | None]:
+    """Invoke the LangGraph app and return (AgentState, run_id). No eval."""
     if not user_query.strip():
         raise ValueError("user_query must not be empty")
 
-    logger.info("Workflow.run | query=%r", user_query[:80])
+    logger.info("Workflow._invoke | query=%r", user_query[:80])
 
     app = _get_app(config)
 
-    # Reconstruct prior history as properly typed messages, then append current query
     history_messages: list[BaseMessage] = []
     if conversation_history:
         for turn in conversation_history:
@@ -79,7 +148,6 @@ def run(
                 HumanMessage(content=content) if role == "human" else AIMessage(content=content)
             )
 
-    # Build the initial LangGraph state
     initial_state: GraphState = {
         "user_query": user_query,
         "clarified_user_query": None,
@@ -93,7 +161,6 @@ def run(
         "fallback_message": None,
         "messages": [*history_messages, HumanMessage(content=user_query)],
         "error": None,
-        # Pass configuration hints as declared GraphState fields
         "image_style": image_style,
         "image_size": image_size,
         "linkedin_post_type": linkedin_post_type,
@@ -110,28 +177,11 @@ def run(
         )
         run_id = str(run_collector.traced_runs[0].id) if run_collector.traced_runs else None
     except Exception as exc:
-        logger.exception("Workflow.run failed: %s", exc)
+        logger.exception("Workflow._invoke failed: %s", exc)
         final_state = {**initial_state, "error": str(exc)}  # type: ignore[assignment]
         run_id = None
 
-    result = _graph_state_to_agent_state(final_state)
-
-    # Run DeepEval GEval scoring (non-fatal — eval failure never blocks content delivery)
-    if not result.error and not result.fallback_message:
-        try:
-            cfg = config or Config.get_instance()
-            scores = evaluate_agent_state(
-                result,
-                run_id=run_id,
-                model=cfg.eval_model,
-                threshold=cfg.eval_threshold,
-            )
-            result = result.model_copy(update={"eval_scores": scores})
-        except Exception as exc:
-            logger.warning("Eval run failed (non-fatal): %s", exc)
-
-    _log_result_summary(result)
-    return result
+    return _graph_state_to_agent_state(final_state), run_id
 
 
 def _graph_state_to_agent_state(state: GraphState) -> AgentState:

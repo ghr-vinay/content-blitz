@@ -153,6 +153,10 @@ class Config:
         return self._data.get("services", {}).get("image", {}).get("quality", "standard")
 
     @property
+    def eval_enabled(self) -> bool:
+        return bool(self._data.get("services", {}).get("eval", {}).get("enabled", True))
+
+    @property
     def eval_model(self) -> str:
         return self._data.get("services", {}).get("eval", {}).get("model", "gpt-4o")
 

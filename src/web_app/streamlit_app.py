@@ -16,6 +16,7 @@ Features:
 
 import json
 import sys
+import time
 from pathlib import Path
 
 # Ensure project root is on sys.path so `src.*` imports work when
@@ -30,6 +31,7 @@ from src.core.config import Config
 from src.core.models import AgentState
 from src.core.workflow import reset_app
 from src.core.workflow import run as workflow_run
+from src.core.workflow import run_non_blocking_eval as workflow_run_async
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
@@ -48,6 +50,10 @@ if "config_ok" not in st.session_state:
     st.session_state.config_ok = False
 if "last_result" not in st.session_state:
     st.session_state.last_result = None
+if "eval_future" not in st.session_state:
+    st.session_state.eval_future = None     # Future[list[EvalScore]] | None
+if "eval_msg_idx" not in st.session_state:
+    st.session_state.eval_msg_idx = None    # index into messages list to back-fill scores
 
 
 # ── Config / API key validation ────────────────────────────────────────────────
@@ -296,6 +302,41 @@ def _render_chat_history() -> None:
                 _render_result(msg["result"])
 
 
+# ── Background eval polling ────────────────────────────────────────────────────
+def _poll_eval_future() -> str:
+    """
+    Check whether the background eval thread has finished.
+
+    Returns:
+        "done"     — future just completed; caller should st.rerun() to show scores.
+        "running"  — still in progress; caller should sleep + st.rerun() to poll again.
+        "idle"     — no active future; nothing to do.
+    """
+    future = st.session_state.get("eval_future")
+    if future is None:
+        return "idle"
+
+    if future.done():
+        try:
+            scores = future.result()
+            idx = st.session_state.eval_msg_idx
+            if idx is not None and idx < len(st.session_state.messages):
+                msg = st.session_state.messages[idx]
+                if msg.get("result"):
+                    msg["result"] = msg["result"].model_copy(update={"eval_scores": scores})
+                    if st.session_state.last_result and not st.session_state.last_result.eval_scores:
+                        st.session_state.last_result = msg["result"]
+        except Exception:
+            pass  # eval failure is non-fatal; scores simply won't appear
+        finally:
+            st.session_state.eval_future = None
+            st.session_state.eval_msg_idx = None
+        return "done"   # scores merged — rerun to render them
+    else:
+        st.status("⏳ Evaluating content quality in background…", state="running")
+        return "running"   # still running — rerun after a pause
+
+
 # ── Main ───────────────────────────────────────────────────────────────────────
 def main() -> None:
     settings = _render_sidebar()
@@ -319,11 +360,11 @@ def main() -> None:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Run the workflow with a spinner
+        # Run the workflow with a spinner (eval runs in background thread)
         with st.chat_message("assistant"):
             with st.spinner("Thinking…"):
                 try:
-                    result: AgentState = workflow_run(
+                    result, eval_future = workflow_run_async(
                         user_query=prompt,
                         image_style=settings["image_style"],
                         image_size=settings["image_size"],
@@ -332,6 +373,7 @@ def main() -> None:
                     )
                 except Exception as exc:
                     result = AgentState(user_query=prompt, error=str(exc))
+                    eval_future = None
 
             # Build assistant message text
             if result.error:
@@ -362,6 +404,22 @@ def main() -> None:
         st.session_state.conversation_history.append({"role": "human", "content": prompt})
         st.session_state.conversation_history.append({"role": "ai", "content": assistant_text})
         st.session_state.last_result = result
+
+        # Register background eval future so the polling loop can surface scores
+        if eval_future is not None:
+            st.session_state.eval_future = eval_future
+            st.session_state.eval_msg_idx = len(st.session_state.messages) - 1
+            st.rerun()  # first rerun: re-render from history and start polling
+
+    # ── Poll AFTER all content is rendered ──────────────────────────────────
+    # st.rerun() is only triggered here so the full page (chat history +
+    # generated content) is committed to the browser before refreshing.
+    eval_status = _poll_eval_future()
+    if eval_status == "running":
+        time.sleep(2)   # throttle polling to ~1 rerun per 2 s
+        st.rerun()
+    elif eval_status == "done":
+        st.rerun()      # re-render immediately to show the merged scores
 
 
 if __name__ == "__main__":
