@@ -160,13 +160,16 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 
 ---
 
-### Phase 10: LLM Evaluation (LLM-as-Judge)
+### Phase 10: LLM Evaluation (DeepEval GEval / LLM-as-Judge)
 
-- [ ] **10.1** Implement `src/utils/llm_eval.py` — LLM-as-Judge evaluator that scores generated content on relevance, coherence, accuracy, and completeness
-- [ ] **10.2** Define evaluation criteria/rubrics for each content type (blog, LinkedIn post, research summary)
-- [ ] **10.3** Integrate evaluation into the workflow — auto-score outputs after generation and surface scores in the UI
-- [ ] **10.4** Log evaluation scores to LangSmith for tracking quality trends over time
-- [ ] **10.5** _(Optional)_ Implement pairwise comparison evaluator — compare two versions of content and pick the better one
+> Uses [DeepEval](https://github.com/confident-ai/deepeval)'s **GEval** metric — a structured LLM-as-Judge framework where evaluation criteria are defined in plain English and scored by an LLM. More reliable than a hand-rolled judge prompt.
+
+- [ ] **10.1** Add `deepeval` to `requirements.txt`; verify it installs cleanly in the venv
+- [ ] **10.2** Create `src/eval/llm_eval.py` — define `GEval` metric instances (relevance, coherence, accuracy, completeness) and a `evaluate_content(test_case, metrics)` helper that runs `.measure()` and returns scores + reasons
+- [ ] **10.3** Define per-content-type rubrics as plain-English `criteria` strings inside each `GEval` metric (blog, LinkedIn post, research summary) — no raw judge prompts needed
+- [ ] **10.4** After each generation node, create a `LLMTestCase` and call `evaluate_content()` — surface the score + reason in CLI output and Streamlit UI (e.g. a collapsible "Eval Scores" expander)
+- [ ] **10.5** Bridge DeepEval scores into LangSmith — after `.measure()`, call `langsmith_client.create_feedback(run_id, key, score, comment)` using the active trace run ID; DeepEval does not push to LangSmith natively so this is explicit glue code (~5 lines)
+- [ ] **10.6** _(Optional)_ Pairwise comparison — create two `LLMTestCase` instances (original vs refined) and use a custom `GEval` with a "which is better and why" criterion, or DeepEval's built-in `evaluate()` with both
 
 ---
 
