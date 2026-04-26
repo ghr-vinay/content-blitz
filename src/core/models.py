@@ -11,6 +11,7 @@ class ResearchResult(BaseModel):
     summary: str
     key_findings: list[str]
     sources: list[str] = Field(default_factory=list)
+    source_snippets: list[str] = Field(default_factory=list)  # raw text snippets from search results
     researched_at: datetime = Field(
         default_factory=lambda: datetime.now(timezone.utc)
     )

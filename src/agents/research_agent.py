@@ -86,6 +86,7 @@ class ResearchAgent(BaseAgent):
             results = self._search.search(topic)
             raw_results = self._format_results(results)
             sources = [r.get("url", "") for r in results if r.get("url")]
+            snippets = [r.get("snippet", "") for r in results if r.get("snippet")]
 
             # Step 2: Synthesise — merge with existing if refinement
             if is_refinement and existing_research:
@@ -97,9 +98,11 @@ class ResearchAgent(BaseAgent):
                     existing_findings=existing_findings_str,
                 )
                 all_sources = list(dict.fromkeys(existing_research.sources + sources))
+                all_snippets = list(dict.fromkeys(existing_research.source_snippets + snippets))
             else:
                 prompt = _SYNTHESIS_PROMPT.format(topic=topic, raw_results=raw_results)
                 all_sources = sources
+                all_snippets = snippets
 
             raw = self._llm.generate(prompt, config={"run_name": "research_agent~run"})
             parsed = self._parse_json(raw)
@@ -109,6 +112,7 @@ class ResearchAgent(BaseAgent):
                 summary=parsed.get("summary", raw),
                 key_findings=parsed.get("key_findings", []),
                 sources=parsed.get("sources", all_sources),
+                source_snippets=all_snippets,
             )
 
             logger.info(

@@ -222,7 +222,7 @@ def _evaluate_research(result: "AgentState", model: str, threshold: float) -> li
     test_case = LLMTestCase(
         input=result.clarified_user_query or result.user_query,
         actual_output=full_output,
-        retrieval_context=r.sources,
+        retrieval_context=r.source_snippets or r.sources,  # prefer rich snippets; fall back to URLs
     )
     return _run_metrics(_research_metrics(model, threshold), test_case, "research")
 

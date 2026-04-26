@@ -14,6 +14,6 @@ image:
   quality: standard         # options: standard | hd
 
 eval:
-  enabled: false             # set to false to skip LLM evaluation entirely
-  model: gpt-4o             # judge model used by DeepEval GEval
+  enabled: true             # set to false to skip LLM evaluation entirely
+  model: gpt-5.4-mini       # judge model used by DeepEval GEval
   threshold: 0.5            # pass/fail threshold (0.0–1.0)

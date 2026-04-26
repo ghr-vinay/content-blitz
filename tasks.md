@@ -93,7 +93,7 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 #### 5B: Deep Research Agent
 - [x] **5.6** Implement `src/agents/research_agent.py` — extends `BaseAgent`; depends on injected `BaseSearchTool`, not a concrete SERP client (**DIP**)
 - [x] **5.7** Add research synthesis — aggregate multiple search results into a coherent research summary
-- [x] **5.8** Add source attribution — track and include URLs/references in research output
+- [x] **5.8** Add source attribution — track and include URLs/references in research output; Also persist raw source snippets for source quality evaluation at later stages.
 
 #### 5C: SEO Blog Writer Agent
 - [x] **5.9** Implement `src/agents/blog_writer.py` — extends `BaseAgent`; single responsibility is SEO blog generation, outputs `BlogPost` Pydantic model
