@@ -15,6 +15,7 @@ Features:
 """
 
 import json
+import random
 import sys
 import time
 from pathlib import Path
@@ -100,6 +101,7 @@ def _render_sidebar() -> dict:
             st.session_state.messages = []
             st.session_state.conversation_history = []
             st.session_state.last_result = None
+            st.session_state.pop("suggestion_samples", None)  # re-sample on next zero state
             reset_app()
             st.rerun()
 
@@ -356,7 +358,48 @@ def main() -> None:
 
     _render_chat_history()
 
-    if prompt := st.chat_input("Ask me to research, write a blog, LinkedIn post, generate an image…"):
+    # ── Zero-state suggestions ───────────────────────────────────────────────
+    # Shown only when the conversation is empty AND no prompt is pending.
+    # Samples are stored in session state so the button→text mapping is stable
+    # across reruns (avoids picking up the wrong suggestion on rerun).
+    _SUGGESTIONS = [
+        ("📝", "Blog post", "Write a blog post about the rise of AI agents in 2025"),
+        ("💼", "LinkedIn post", "Write a thought-leadership LinkedIn post about RAG in enterprise AI"),
+        ("🔍", "Research", "Research the latest trends in large language models"),
+        ("🎨", "Blog + image", "Write a blog post about vector databases and generate a cover image"),
+        ("🗺️", "Content strategy", "Give me a content strategy for a SaaS company launching a developer tool"),
+        ("🔄", "LinkedIn + image", "Write a LinkedIn announcement post about an AI product launch and generate an image"),
+    ]
+
+    if not st.session_state.messages and "_pending_prompt" not in st.session_state:
+        # Sample once and freeze — cleared when the conversation is cleared
+        if "suggestion_samples" not in st.session_state:
+            st.session_state.suggestion_samples = random.sample(_SUGGESTIONS, 3)
+        shown = st.session_state.suggestion_samples
+
+        st.markdown('<div style="height:12vh"></div>', unsafe_allow_html=True)
+        _, center, _ = st.columns([1, 1.2, 1])
+        with center:
+            st.markdown("#### What would you like to create today?")
+            for i, (icon, label, suggestion_text) in enumerate(shown):
+                if st.button(
+                    f"{icon} **{label}**\n\n{suggestion_text}",
+                    use_container_width=True,
+                    key=f"suggestion_{i}",
+                ):
+                    st.session_state["_pending_prompt"] = suggestion_text
+                    st.rerun()
+        st.markdown('<div style="height:12vh"></div>', unsafe_allow_html=True)
+
+    # Apply a suggestion that was clicked in the previous run
+    if "_pending_prompt" in st.session_state:
+        prompt = st.session_state.pop("_pending_prompt")
+    elif prompt := st.chat_input("Ask me to research, write a blog, LinkedIn post, generate an image…"):
+        pass
+    else:
+        prompt = None
+
+    if prompt:
         # Show user message immediately
         st.session_state.messages.append({"role": "user", "content": prompt})
         with st.chat_message("user"):

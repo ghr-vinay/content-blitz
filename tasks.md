@@ -149,6 +149,7 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 - [x] **8.4** Add sidebar controls — image style, LinkedIn post type, image size selectors; clear conversation button
 - [x] **8.5** Handle loading states — spinner during agent workflow execution
 - [x] **8.6** Add export/download buttons — download generated content as markdown or copy to clipboard
+- [x] **8.7** *(Improvement)* Add zero-state suggestion cards — when conversation is empty, show 3 randomly sampled prompt suggestions centered vertically and horizontally on the page; clicking a card submits the prompt via `st.session_state["_pending_prompt"]` + `st.rerun()`; cards disappear once the first message is sent
 
 ---
 

@@ -1,6 +1,6 @@
 llm:
   provider: openai          # primary LLM provider
-  model: gpt-4o
+  model: gpt-5.4            # primary model for content generation
   temperature: 0.7
   max_tokens: 4096
 

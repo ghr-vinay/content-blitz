@@ -55,11 +55,11 @@ Off-topic requests are handled gracefully by a **FallbackAgent** that explains t
 - 📝 **Blog post generation** — SEO-optimised output with title, meta description, keyword list, and structured headings
 - 💼 **LinkedIn post generation** — Engagement-optimised content with hashtag strategy; supports post styles: `thought-leadership`, `announcement`, `story`, `listicle`, `general`
 - 🔍 **Deep web research** — Multi-query SERP search with requirement-aware synthesis; results grounded in real sources
-- 🧩 **Content strategy** — Structured strategy output for a given topic or campaign goal
+- 🗺️ **Content strategy** — Structured strategy output for a given topic or campaign goal
 - 🎨 **AI image generation** — DALL-E 3 integration with configurable style and size
 - 🔗 **Combined intents** — Request blog + image or LinkedIn + image in a single prompt; the agent pipeline chains automatically
 - 🔄 **Multi-turn refinement** — Follow up with "make it shorter", "add more statistics", or "change the tone" and the relevant agent updates its prior output
-- 📈 **Automatic LLM evaluation** — Every response is scored in the background using DeepEval GEval (Relevance, Coherence, SEO Quality, Engagement Quality, Source Quality). Scores appear in the UI without blocking the response
+- 📊 **Automatic LLM evaluation** — Every response is scored in the background using DeepEval GEval (Relevance, Coherence, SEO Quality, Engagement Quality, Source Quality). Scores appear in the UI without blocking the response
 - 🚧 **Off-topic fallback** — Unrecognised requests are gracefully declined with an explanation
 
 ---
