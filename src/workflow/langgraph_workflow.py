@@ -7,79 +7,61 @@ from src.utils.logger import get_logger
 
 logger = get_logger(__name__)
 
-# ── Intent → node name mapping ─────────────────────────────────────────────────
-# Used by the router edge to decide which agent runs after query_handler.
+# ── Intent → agent chain mapping ───────────────────────────────────────────────
+# QueryHandlerAgent writes _INTENT_TO_NODE[intent] into state["remaining_nodes"].
+# Each agent pops the first entry; _route_next reads the new head.
+# To add a new intent chain, add a line here — zero routing code changes needed.
 _INTENT_TO_NODE: dict[str, list[str]] = {
-    "research":  ["research_agent"],
-    "blog":      ["blog_writer"],
-    "linkedin":  ["linkedin_writer"],
-    "image":     ["image_generator"],
-    "strategy":  ["content_strategist"],
-    # "multi" triggers research first, then all content agents
-    "multi":     ["research_agent"],
-    "off_topic": ["fallback_agent"],
+    "research":               ["research_agent"],
+    "blog":                   ["research_agent", "blog_writer"],
+    "linkedin":               ["research_agent", "linkedin_writer"],
+    "image":                  ["image_generator"],
+    "strategy":               ["content_strategist"],
+    "blog_with_image":        ["research_agent", "blog_writer", "image_generator"],
+    "linkedin_with_image":    ["research_agent", "linkedin_writer", "image_generator"],
+    "off_topic":              ["fallback_agent"],
 }
 
 
-# ── Conditional edge functions ─────────────────────────────────────────────────
+# ── Generalised conditional edge routing ────────────────────────────────────────────────────────
 
-def _route_after_query_handler(state: GraphState) -> str:
+def _route_next(state: GraphState) -> str:
     """
-    Route to the correct agent node based on classified intent.
-    Falls back to END if intent is unrecognised or an error occurred.
+    Single routing function used after every agent node.
+
+    Reads state["remaining_nodes"]:
+    - If the list is non-empty, routes to the first entry.
+    - If empty (or error), routes to END.
     """
     if state.get("error"):
         logger.warning("Routing to END due to error: %s", state["error"])
         return END
 
-    intent: str = state.get("intent", "")
-    nodes = _INTENT_TO_NODE.get(intent, [])
+    remaining: list[str] = state.get("remaining_nodes", [])
+    if remaining:
+        next_node = remaining[0]
+        logger.info("_route_next → '%s' (%d remaining)", next_node, len(remaining))
+        return next_node
 
-    if not nodes:
-        logger.warning("Unknown intent '%s' — routing to END", intent)
-        return END
-
-    next_node = nodes[0]
-    logger.info("Routing intent='%s' → node='%s'", intent, next_node)
-    return next_node
+    logger.info("_route_next → END (chain complete)")
+    return END
 
 
-def _route_after_research(state: GraphState) -> str:
+# ── Routing queue helper ───────────────────────────────────────────────────────
+
+def _advance_queue(agent_fn):
     """
-    After research, decide whether to continue to content agents (multi intent)
-    or finish.
+    Wrap an agent callable so it pops the first entry from remaining_nodes
+    after the agent runs. Keeps agents fully unaware of routing concerns.
     """
-    if state.get("error"):
-        return END
-
-    intent = state.get("intent", "")
-    if intent == "multi":
-        # After research, run all content agents in sequence.
-        # For simplicity, we route to blog_writer first; it will chain on.
-        logger.info("Multi-intent: routing research → blog_writer")
-        return "blog_writer"
-
-    return END
-
-
-def _route_after_blog(state: GraphState) -> str:
-    """After blog, continue to linkedin_writer if multi-intent."""
-    if state.get("error"):
-        return END
-    if state.get("intent") == "multi":
-        logger.info("Multi-intent: routing blog_writer → linkedin_writer")
-        return "linkedin_writer"
-    return END
-
-
-def _route_after_linkedin(state: GraphState) -> str:
-    """After linkedin, continue to image_generator if multi-intent."""
-    if state.get("error"):
-        return END
-    if state.get("intent") == "multi":
-        logger.info("Multi-intent: routing linkedin_writer → image_generator")
-        return "image_generator"
-    return END
+    def _wrapped(state: GraphState) -> dict[str, Any]:
+        result = agent_fn(state)
+        # Advance the queue: drop the node that just ran
+        remaining = state.get("remaining_nodes", [])
+        result["remaining_nodes"] = remaining[1:]
+        return result
+    _wrapped.__name__ = getattr(agent_fn, "__name__", "agent")
+    return _wrapped
 
 
 # ── Placeholder node — replaced by real agent in Phase 5 ──────────────────────
@@ -114,6 +96,10 @@ def build_graph(
     not concrete agent classes. Placeholder no-ops are used for any agent
     not yet wired in so the graph can be compiled and tested incrementally.
 
+    Routing is fully generalised: every node uses _route_next which follows
+    the remaining_nodes queue written by QueryHandlerAgent. Adding a new intent
+    chain requires only a new _INTENT_TO_NODE entry — no routing changes.
+
     Args:
         *_fn: Callable(state: GraphState) -> dict  for each agent node.
               Pass None to use a placeholder until the agent is implemented.
@@ -123,64 +109,34 @@ def build_graph(
     """
     graph = StateGraph(GraphState)
 
-    # Register nodes — fall back to placeholders for anything not yet wired
-    graph.add_node("query_handler",     query_handler_fn     or _placeholder_node("query_handler"))
-    graph.add_node("research_agent",    research_agent_fn    or _placeholder_node("research_agent"))
-    graph.add_node("blog_writer",       blog_writer_fn       or _placeholder_node("blog_writer"))
-    graph.add_node("linkedin_writer",   linkedin_writer_fn   or _placeholder_node("linkedin_writer"))
-    graph.add_node("image_generator",   image_generator_fn   or _placeholder_node("image_generator"))
-    graph.add_node("content_strategist",content_strategist_fn or _placeholder_node("content_strategist"))
-    graph.add_node("fallback_agent",    fallback_agent_fn    or _placeholder_node("fallback_agent"))
+    # All possible destination nodes — used in every conditional edge map
+    _all_destinations = {
+        "research_agent":     "research_agent",
+        "blog_writer":        "blog_writer",
+        "linkedin_writer":    "linkedin_writer",
+        "image_generator":    "image_generator",
+        "content_strategist": "content_strategist",
+        "fallback_agent":     "fallback_agent",
+        END:                   END,
+    }
+
+    # Register nodes — fall back to placeholders for anything not yet wired.
+    # Every real agent is wrapped with _advance_queue to pop itself off remaining_nodes.
+    graph.add_node("query_handler",      query_handler_fn      or _placeholder_node("query_handler"))
+    graph.add_node("research_agent",     _advance_queue(research_agent_fn     or _placeholder_node("research_agent")))
+    graph.add_node("blog_writer",        _advance_queue(blog_writer_fn        or _placeholder_node("blog_writer")))
+    graph.add_node("linkedin_writer",    _advance_queue(linkedin_writer_fn    or _placeholder_node("linkedin_writer")))
+    graph.add_node("image_generator",    _advance_queue(image_generator_fn    or _placeholder_node("image_generator")))
+    graph.add_node("content_strategist", _advance_queue(content_strategist_fn or _placeholder_node("content_strategist")))
+    graph.add_node("fallback_agent",     _advance_queue(fallback_agent_fn     or _placeholder_node("fallback_agent")))
 
     # Entry point
     graph.set_entry_point("query_handler")
 
-    # Conditional edges
-    graph.add_conditional_edges(
-        "query_handler",
-        _route_after_query_handler,
-        {
-            "research_agent":     "research_agent",
-            "blog_writer":        "blog_writer",
-            "linkedin_writer":    "linkedin_writer",
-            "image_generator":    "image_generator",
-            "content_strategist": "content_strategist",
-            "fallback_agent":     "fallback_agent",
-            END:                   END,
-        },
-    )
-
-    graph.add_conditional_edges(
-        "research_agent",
-        _route_after_research,
-        {
-            "blog_writer": "blog_writer", 
-            END: END
-         },
-    )
-
-    graph.add_conditional_edges(
-        "blog_writer",
-        _route_after_blog,
-        {
-            "linkedin_writer": "linkedin_writer", 
-            END: END
-        },
-    )
-
-    graph.add_conditional_edges(
-        "linkedin_writer",
-        _route_after_linkedin,
-        {
-            "image_generator": "image_generator", 
-            END: END
-        },
-    )
-
-    # Terminal nodes always go to END
-    graph.add_edge("image_generator",    END)
-    graph.add_edge("content_strategist", END)
-    graph.add_edge("fallback_agent",     END)
+    # Every node after query_handler uses the same generalised router
+    for node in ("query_handler", "research_agent", "blog_writer", "linkedin_writer",
+                 "image_generator", "content_strategist", "fallback_agent"):
+        graph.add_conditional_edges(node, _route_next, _all_destinations)
 
     compiled = graph.compile()
     logger.info("ContentBlitz graph compiled successfully")

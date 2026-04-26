@@ -119,7 +119,9 @@ def _render_research(result: AgentState) -> None:
     r = result.research
     if not r:
         return
-    with st.expander("🔍 Research Summary", expanded=True):
+    # Collapse research if a writing output is also present — it's supporting context
+    expanded = not (result.blog_post or result.linkedin_post)
+    with st.expander("🔍 Research Summary", expanded=expanded):
         st.markdown(f"**Topic:** {r.topic}")
         st.markdown(r.summary)
         if r.key_findings:

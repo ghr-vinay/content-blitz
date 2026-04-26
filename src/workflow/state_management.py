@@ -52,6 +52,11 @@ class GraphState(TypedDict):
     # ── Content strategy output ───────────────────────────────────────────────
     content_strategy: Optional[str]
 
+    # ── Generalised routing queue ──────────────────────────────────────────────
+    # Set by QueryHandlerAgent from _INTENT_TO_NODE[intent].
+    # Each agent node pops the first entry; _route_next reads the new head.
+    remaining_nodes: list[str]
+
     # ── Agent configuration hints ───────────────────────────────────────────────
     # Passed in at workflow entry and preserved throughout the graph so every
     # node can read them without being re-injected at each step.

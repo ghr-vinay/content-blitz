@@ -14,7 +14,10 @@ _HISTORY_WINDOW = 6
 logger = get_logger(__name__)
 
 # Valid single-intent values the classifier may emit
-_VALID_INTENTS = {"research", "blog", "linkedin", "image", "strategy", "multi", "off_topic"}
+_VALID_INTENTS = {
+    "research", "blog", "linkedin", "image", "strategy",
+    "blog_with_image", "linkedin_with_image", "off_topic",
+}
 
 _REFINEMENT_SIGNALS = (
     "also", "additionally", "include", "add", "update", "change", "modify",
@@ -24,14 +27,15 @@ _REFINEMENT_SIGNALS = (
 _SYSTEM_PROMPT = """You are a routing assistant for ContentBlitz, an AI content marketing system.
 
 Classify the user's request into EXACTLY ONE of these intents:
-- research   → user wants web research / fact-finding on a topic
-- blog       → user wants an SEO blog post written
-- linkedin   → user wants a LinkedIn post written
-- image      → user wants an image generated
-- strategy   → user wants a content strategy or plan
-- multi      → user wants research AND one or more content formats IN THE SAME REQUEST
-- off_topic  → user's request has nothing to do with content marketing, writing, research, or images
-              (e.g. coding help, maths, personal advice, weather, jokes, general trivia)
+- research            → user wants web research / fact-finding on a topic
+- blog                → user wants an SEO blog post (research is run automatically to ground it)
+- linkedin            → user wants a LinkedIn post (research is run automatically to ground it)
+- image               → user wants an image generated (no research needed)
+- strategy            → user wants a content strategy or plan
+- blog_with_image     → user wants a blog post AND an image together
+- linkedin_with_image → user wants a LinkedIn post AND an image together
+- off_topic           → user's request has nothing to do with content marketing, writing, research, or images
+                        (e.g. coding help, maths, personal advice, weather, jokes, general trivia)
 
 Rules:
 1. Reply with ONLY a JSON object:
@@ -40,10 +44,10 @@ Rules:
 3. Use "off_topic" when the request is clearly unrelated to content marketing,
    writing, research, or image generation. Err on the side of attempting to help
    — only use "off_topic" for requests that are obviously out of scope.
-3. "multi" applies ONLY when the CURRENT message explicitly asks for multiple output formats
-   in a single request (e.g. "research X and write a blog about it").
-   A research request that follows a prior LinkedIn post is still just "research" — do NOT
-   inherit prior output types from history as the current intent.
+3. Use "blog_with_image" only when the user explicitly requests both a blog post AND an image.
+   Use "linkedin_with_image" only when the user explicitly requests both a LinkedIn post AND an image.
+   A request for just a blog or linkedin post uses "blog" / "linkedin" — research is always run automatically.
+   A research-only request with no writing asked for uses "research".
 4. Use conversation history ONLY to resolve topic references and pronouns
    (e.g. "research about this" after a LinkedIn post about video editing → clarified_query: "video editing software programs").
    Do NOT use history to infer that the user also wants the same output types they asked for before.
@@ -58,7 +62,9 @@ Rules:
 Examples:
 - "Write me a blog about LangGraph" → {"intent": "blog", "clarified_query": "LangGraph deep dive", "is_refinement": false}
 - "research what software is available for this" (after LinkedIn post about video editing) → {"intent": "research", "clarified_query": "video editing software programs", "is_refinement": false}
-- "research AI trends and also write a blog about it" → {"intent": "multi", "clarified_query": "AI trends 2024", "is_refinement": false}
+- "write a blog about AI trends" → {"intent": "blog", "clarified_query": "AI trends 2024", "is_refinement": false}
+- "write a blog about AI trends and generate a cover image" → {"intent": "blog_with_image", "clarified_query": "AI trends 2024", "is_refinement": false}
+- "create a LinkedIn post and an image about remote work" → {"intent": "linkedin_with_image", "clarified_query": "remote work benefits and culture", "is_refinement": false}
 - "also include healthcare AI trends" (after prior research on AI) → {"intent": "research", "clarified_query": "AI trends 2024, including healthcare AI", "is_refinement": true}
 - "Generate an image of a robot doctor" → {"intent": "image", "clarified_query": "robot doctor, futuristic medical setting", "is_refinement": false}
 - "What is 2 + 2?" → {"intent": "off_topic", "clarified_query": "What is 2 + 2?", "is_refinement": false}
@@ -119,12 +125,20 @@ class QueryHandlerAgent(BaseAgent):
                 if any(signal in lower for signal in _REFINEMENT_SIGNALS):
                     is_refinement = True
 
-            logger.info("QueryHandlerAgent: intent=%s | is_refinement=%s", intent, is_refinement)
+            # Build the agent execution queue from the intent chain
+            from src.workflow.langgraph_workflow import _INTENT_TO_NODE
+            remaining_nodes = list(_INTENT_TO_NODE.get(intent, []))
+
+            logger.info(
+                "QueryHandlerAgent: intent=%s | is_refinement=%s | chain=%s",
+                intent, is_refinement, remaining_nodes,
+            )
             return {
                 "intent": intent,
-                "user_query": user_query,          # preserve original
-                "clarified_user_query": clarified, # enriched cumulative query
+                "user_query": user_query,           # preserve original
+                "clarified_user_query": clarified,  # enriched cumulative query
                 "is_refinement": is_refinement,
+                "remaining_nodes": remaining_nodes,
                 "error": None,
             }
 

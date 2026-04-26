@@ -71,8 +71,9 @@ The codebase will follow SOLID principles throughout:
 
 ### Phase 4: LangGraph State & Workflow Engine
 
-- [x] **4.1** Implement `src/workflow/state_management.py` — define LangGraph `TypedDict` state schema (user query, intent, research context, generated content, conversation history, image URLs)
+- [x] **4.1** Implement `src/workflow/state_management.py` — define LangGraph `TypedDict` state schema (user query, intent, research context, generated content, conversation history, image URLs); includes `remaining_nodes: list[str]` — a per-request agent execution queue populated by `QueryHandlerAgent` and consumed by `_advance_queue` to drive generalised routing
 - [x] **4.2** Implement `src/workflow/langgraph_workflow.py` — build the LangGraph `StateGraph` with nodes for each agent and conditional edges for routing
+- [x] **4.2.1** *(Improvement)* Generalise routing — replaced all per-intent conditional edge functions (`_route_after_research`, `_route_after_blog`, etc.) with a single `_route_next(state)` that reads `state["remaining_nodes"][0]`; added `_advance_queue(agent_fn)` wrapper that pops the head of the queue after each agent runs, keeping agents fully unaware of routing; `build_graph` now registers a single conditional edge for every node using one shared destination map — adding a new intent chain requires only a new `_INTENT_TO_NODE` entry, zero routing code changes needed (**OCP**)
 - [x] **4.3** Implement conversation memory — persist multi-turn context across interactions using LangGraph state; messages serialized with correct role (`HumanMessage` / `AIMessage`) for accurate LLM context; prior history reconstructed in correct chronological order before the current query
 - [x] **4.4** Implement error handling within the graph — graceful degradation, fallback nodes, partial result recovery
 - [x] **4.5** Verify full graph traces appear in LangSmith with node-level visibility
@@ -85,9 +86,9 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 
 #### 5A: Query Handler Agent (Router)
 - [x] **5.1** Implement `src/agents/query_handler.py` — extends `BaseAgent`; single responsibility is intent classification (research, blog, linkedin, image, strategy)
-- [x] **5.2** Build routing logic — map classified intent to the correct downstream agent node(s) in the graph
+- [x] **5.2** Build routing logic — `QueryHandlerAgent` writes `_INTENT_TO_NODE[intent]` into `state["remaining_nodes"]`; the graph's generalised `_route_next` function follows this queue node-by-node; `_INTENT_TO_NODE` is the single source of truth for all agent chains
 - [x] **5.3** Handle ambiguous queries — ask clarifying questions or select a reasonable default
-- [x] **5.4** Support multi-intent queries — detect when user wants multiple outputs (e.g., "research X and write a blog about it")
+- [x] **5.4** Support multi-output intents — `blog_with_image` (research → blog → image) and `linkedin_with_image` (research → linkedin → image) replace the former `multi` intent; `blog` and `linkedin` always include research automatically; `_VALID_INTENTS` and system prompt updated with examples for all new intents
 - [x] **5.5** Inject sliding window conversation history into query_handler prompt — last `_HISTORY_WINDOW` (6) messages formatted as `User`/`Assistant` lines; enables follow-up resolution (e.g. "now write a blog about that") without exceeding token limits
 
 #### 5B: Deep Research Agent

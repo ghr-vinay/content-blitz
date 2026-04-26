@@ -153,6 +153,7 @@ def _invoke_workflow(
         "clarified_user_query": None,
         "intent": None,
         "is_refinement": False,
+        "remaining_nodes": [],  # populated by QueryHandlerAgent from _INTENT_TO_NODE
         "research": None,
         "blog_post": None,
         "linkedin_post": None,
