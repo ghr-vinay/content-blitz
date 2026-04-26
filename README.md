@@ -185,8 +185,8 @@ Create a `.env` file in the project root and populate it with your API keys:
 
 ```bash
 touch .env
-# Open .env and add your keys — see the Environment Variables section for the full list
 ```
+Open .env and add your keys — see the [Environment Variables](#environment-variables) section for the full list
 
 ### 5. Run the Streamlit web UI
 
@@ -241,7 +241,7 @@ Create a `.env` file in the project root with the following keys:
 |---|---|---|
 | `OPENAI_API_KEY` | ✅ Yes | OpenAI API key (LLM + DALL-E 3) |
 | `SERP_API_KEY` | ✅ Yes | SerpAPI key for web research |
-| `LANGSMITH_API_KEY` | ⬜ Optional | LangSmith tracing (traces disabled if absent) |
+| `LANGSMITH_API_KEY` | ⬜ Optional | LangSmith tracing (Add it to see traces in Langsmith dashboard; traces disabled if absent) |
 
 ```env
 OPENAI_API_KEY=sk-...
