@@ -189,13 +189,13 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 
 ---
 
-### Phase 12: Testing
+### Phase 12: Testing *(partial[-])*
 
-- [ ] **12.1** Write unit tests for each agent (`tests/unit/`) — inject mock tools/LLM via constructor (easy to test thanks to **DIP**), test prompt construction, validate output Pydantic models
-- [ ] **12.2** Write unit tests for integration clients — test each implements its base interface contract, test retry logic, error handling
-- [ ] **12.3** Write unit tests for LLM eval module — test scoring logic with canned inputs
-- [ ] **12.4** Write integration tests (`tests/integration/`) — test full agent → tool → LLM pipeline
-- [ ] **12.5** Write E2E tests (`tests/e2e/`) — test full workflow from user query → routed agent → generated content → eval score
+- [-] **12.1** Write unit tests for each agent (`tests/unit/`) — inject mock tools/LLM via constructor (easy to test thanks to **DIP**), test prompt construction, validate output Pydantic models (partial - linkedin_agent)
+- [-] **12.2** Write unit tests for integration clients — test each implements its base interface contract, test retry logic, error handling (partial - openai_client)
+- [-] **12.3** Write unit tests for LLM eval module — test scoring logic with canned inputs
+- [-] **12.4** Write integration tests (`tests/integration/`) — test full agent → tool → LLM pipeline (partial - linkedin_agent)
+- [-] **12.5** Write E2E tests (`tests/e2e/`) — test full workflow from user query → routed agent → generated content → eval score
 
 ---
 
