@@ -104,8 +104,8 @@ def _render_sidebar() -> dict:
             st.rerun()
 
         st.divider()
-        st.caption("Phases complete: 1–10 ✅")
         st.caption("Model: GPT-4o + DALL-E 3")
+        st.caption("Contact at ghr247@gmail.com")
 
     return {
         "image_style": image_style,

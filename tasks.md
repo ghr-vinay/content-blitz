@@ -137,6 +137,7 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 - [x] **7.5** Update `BlogWriterAgent` — when `is_refinement=True`, pass existing `BlogPost` content into a refinement prompt to patch/extend the post rather than rewrite it
 - [x] **7.6** Update `LinkedInWriterAgent` — when `is_refinement=True`, pass existing `LinkedInPost` content into a refinement prompt to update the post
 - [x] **7.7** Update `ImageGeneratorAgent` — when `is_refinement=True`, pass existing `ImageResult.prompt_used` into a refinement prompt optimizer to produce an updated DALL-E prompt
+- [x] **7.8** *(Improvement)* Fix research synthesis ignoring user-specific requirements (e.g. "include examples") — `ResearchAgent` now runs a lightweight LLM call (`_extract_search_queries`) to convert the full `clarified_user_query` into 2-3 targeted keyword-style SERP queries covering distinct angles of the request; results from all queries are merged and deduplicated before synthesis; `_SYNTHESIS_PROMPT` and `_REFINEMENT_SYNTHESIS_PROMPT` updated to receive the full `user_request` and include an explicit rule that the summary MUST address all aspects of the request, not just the general topic
 ---
 
 ### Phase 8: Streamlit Web Interface
