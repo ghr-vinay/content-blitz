@@ -1,0 +1,41 @@
+flowchart TD
+    START([User Query]) --> QH[QueryHandlerAgent\nclassify intent\nbuild remaining_nodes queue]
+
+    QH -->|intent = research| RA
+    QH -->|intent = blog| RA2
+    QH -->|intent = linkedin| RA3
+    QH -->|intent = image| IG
+    QH -->|intent = strategy| CS
+    QH -->|intent = blog_with_image| RA4
+    QH -->|intent = linkedin_with_image| RA5
+    QH -->|intent = off_topic| FA
+
+    RA[ResearchAgent\nmulti-query SERP] --> END1([END])
+
+    RA2[ResearchAgent] --> BW[BlogWriterAgent\nSEO blog post] --> END2([END])
+
+    RA3[ResearchAgent] --> LW[LinkedInWriterAgent\nhashtag strategy] --> END3([END])
+
+    IG[ImageGeneratorAgent\nDALL·E 3] --> END4([END])
+
+    CS[ContentStrategistAgent] --> END5([END])
+
+    RA4[ResearchAgent] --> BW2[BlogWriterAgent] --> IG2[ImageGeneratorAgent] --> END6([END])
+
+    RA5[ResearchAgent] --> LW2[LinkedInWriterAgent] --> IG3[ImageGeneratorAgent] --> END7([END])
+
+    FA[FallbackAgent\nout-of-scope reply] --> END8([END])
+
+    subgraph Background [Background Thread]
+        EVAL[LLM Evaluator\nDeepEval GEval\nRelevance · Coherence · SEO · Engagement]
+    end
+
+    END2 -.->|eval_future| EVAL
+    END3 -.->|eval_future| EVAL
+    END1 -.->|eval_future| EVAL
+
+    subgraph Observability
+        LS[LangSmith\nTraces · Feedback · Latency]
+    end
+
+    EVAL -.-> LS

@@ -201,7 +201,7 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 
 ### Phase 13: Documentation
 
-- [ ] **13.1** Write comprehensive `README.md` — overview, architecture, setup instructions, usage examples, troubleshooting
+- [x] **13.1** Write comprehensive `README.md` — overview, architecture, setup instructions, usage examples, troubleshooting
 - [ ] **13.2** Write `docs/architecture.md` — system architecture decisions, LangGraph design, agent design rationale
 - [ ] **13.3** Write `docs/api_documentation.md` — document each agent's input/output schema, tool configurations
 - [ ] **13.4** Add inline docstrings to all public functions and classes
