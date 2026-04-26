@@ -118,7 +118,11 @@ class ResearchAgent(BaseAgent):
 
             raw_results = self._format_results(all_results)
             sources = [r.get("url", "") for r in all_results if r.get("url")]
-            snippets = [r.get("snippet", "") for r in all_results if r.get("snippet")]
+            snippets = [
+                s if isinstance(s := r.get("snippet", ""), str) else str(s)
+                for r in all_results
+                if r.get("snippet")
+            ]
 
             # Step 3: Synthesise — merge with existing if refinement
             if is_refinement and existing_research:
