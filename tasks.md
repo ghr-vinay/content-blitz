@@ -150,6 +150,7 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 - [x] **8.5** Handle loading states — spinner during agent workflow execution
 - [x] **8.6** Add export/download buttons — download generated content as markdown or copy to clipboard
 - [x] **8.7** *(Improvement)* Add zero-state suggestion cards — when conversation is empty, show 3 randomly sampled prompt suggestions centered vertically and horizontally on the page; clicking a card submits the prompt via `st.session_state["_pending_prompt"]` + `st.rerun()`; cards disappear once the first message is sent
+- [x] **8.7.1** *(Bug fix)* `StreamlitDuplicateElementKey` crash when the same topic appears in multiple chat history messages — all `_download_button` and `st.button` widget keys were derived solely from content hashes (e.g. `dl_research_{hash(r.topic)}`), which collide when history is re-rendered; added `msg_idx: int = 0` parameter to `_render_result`, `_render_research`, `_render_blog`, `_render_linkedin`, and `_render_strategy`; all widget keys now include `msg_idx` as a prefix; `_render_chat_history` passes the enumerate index and the in-flight render passes `len(st.session_state.messages)` to guarantee global uniqueness
 
 ---
 
@@ -160,6 +161,7 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 - [x] **9.3** Add `fallback_message: Optional[str]` to `GraphState` and `AgentState`; initialise to `None` in `initial_state`; map through `_graph_state_to_agent_state`
 - [x] **9.4** Wire `fallback_agent` node into `langgraph_workflow.py` — register node, add `"off_topic"` branch in `_INTENT_TO_NODE`, add terminal edge to `END`; inject via `router.py`
 - [x] **9.5** Render `fallback_message` in CLI (`cli_app.py`) and Streamlit (`streamlit_app.py`) — early-return path before normal content renderers
+- [x] **9.5.1** *(Bug fix)* `FallbackAgent` not firing for conversational filler — `QueryHandlerAgent` Rule 2 previously defaulted *all* ambiguous input (including `"hm"`, `"ok"`, `"ah i see"`) to `"research"` using conversation history to re-derive a topic; added an explicit rule and examples for short acknowledgements / reactions → `"off_topic"` *before* the ambiguity-default rule so these messages never reach the research pipeline
 
 ---
 

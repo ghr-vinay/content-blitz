@@ -117,7 +117,7 @@ def _render_sidebar() -> dict:
 
 
 # ── Content renderers ──────────────────────────────────────────────────────────
-def _render_research(result: AgentState) -> None:
+def _render_research(result: AgentState, msg_idx: int = 0) -> None:
     r = result.research
     if not r:
         return
@@ -139,11 +139,11 @@ def _render_research(result: AgentState) -> None:
             data=_format_research_md(r),
             filename="research.md",
             mime="text/markdown",
-            key=f"dl_research_{hash(r.topic)}",
+            key=f"dl_research_{msg_idx}_{hash(r.topic)}",
         )
 
 
-def _render_blog(result: AgentState) -> None:
+def _render_blog(result: AgentState, msg_idx: int = 0) -> None:
     b = result.blog_post
     if not b:
         return
@@ -159,11 +159,11 @@ def _render_blog(result: AgentState) -> None:
             data=_format_blog_md(b),
             filename="blog_post.md",
             mime="text/markdown",
-            key=f"dl_blog_{hash(b.title)}",
+            key=f"dl_blog_{msg_idx}_{hash(b.title)}",
         )
 
 
-def _render_linkedin(result: AgentState) -> None:
+def _render_linkedin(result: AgentState, msg_idx: int = 0) -> None:
     lp = result.linkedin_post
     if not lp:
         return
@@ -179,10 +179,10 @@ def _render_linkedin(result: AgentState) -> None:
                 data=lp.content + "\n\n" + " ".join(lp.hashtags),
                 filename="linkedin_post.txt",
                 mime="text/plain",
-                key=f"dl_li_{hash(lp.content[:40])}",
+                key=f"dl_li_{msg_idx}_{hash(lp.content[:40])}",
             )
         with col2:
-            if st.button("📋 Copy to Clipboard", key=f"copy_li_{hash(lp.content[:40])}"):
+            if st.button("📋 Copy to Clipboard", key=f"copy_li_{msg_idx}_{hash(lp.content[:40])}"):
                 st.write("Paste-ready content copied below:")
                 st.code(lp.content + "\n\n" + " ".join(lp.hashtags))
 
@@ -198,7 +198,7 @@ def _render_image(result: AgentState) -> None:
         st.markdown(f"🔗 [Open full image]({img.url})")
 
 
-def _render_strategy(result: AgentState) -> None:
+def _render_strategy(result: AgentState, msg_idx: int = 0) -> None:
     if not result.content_strategy:
         return
     with st.expander("🗺️ Content Strategy", expanded=True):
@@ -208,7 +208,7 @@ def _render_strategy(result: AgentState) -> None:
             data=result.content_strategy,
             filename="content_strategy.md",
             mime="text/markdown",
-            key=f"dl_strat_{hash(result.content_strategy[:40])}",
+            key=f"dl_strat_{msg_idx}_{hash(result.content_strategy[:40])}",
         )
 
 
@@ -234,7 +234,7 @@ def _render_eval_scores(result: AgentState) -> None:
             st.divider()
 
 
-def _render_result(result: AgentState) -> None:
+def _render_result(result: AgentState, msg_idx: int = 0) -> None:
     if result.error:
         st.error(f"❌ {result.error}")
         return
@@ -255,11 +255,11 @@ def _render_result(result: AgentState) -> None:
     refinement_tag = " *(refinement)*" if result.is_refinement else ""
     st.markdown(f"**Intent:** {intent_badge}{refinement_tag}")
 
-    _render_research(result)
-    _render_blog(result)
-    _render_linkedin(result)
+    _render_research(result, msg_idx)
+    _render_blog(result, msg_idx)
+    _render_linkedin(result, msg_idx)
     _render_image(result)
-    _render_strategy(result)
+    _render_strategy(result, msg_idx)
     _render_eval_scores(result)
 
 
@@ -299,11 +299,11 @@ def _format_blog_md(b) -> str:
 
 # ── Chat history renderer ──────────────────────────────────────────────────────
 def _render_chat_history() -> None:
-    for msg in st.session_state.messages:
+    for idx, msg in enumerate(st.session_state.messages):
         with st.chat_message(msg["role"]):
             st.markdown(msg["content"])
             if msg["role"] == "assistant" and msg.get("result"):
-                _render_result(msg["result"])
+                _render_result(msg["result"], msg_idx=idx)
 
 
 # ── Background eval polling ────────────────────────────────────────────────────
@@ -438,7 +438,7 @@ def main() -> None:
                 assistant_text = "Here's what I produced: " + ", ".join(parts) + "." if parts else "Done."
 
             st.markdown(assistant_text)
-            _render_result(result)
+            _render_result(result, msg_idx=len(st.session_state.messages))
 
         # Persist to session
         st.session_state.messages.append({

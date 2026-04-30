@@ -40,22 +40,25 @@ Classify the user's request into EXACTLY ONE of these intents:
 Rules:
 1. Reply with ONLY a JSON object:
    {"intent": "<value>", "clarified_query": "<full cumulative query>", "is_refinement": <true|false>}
-2. If the request is ambiguous, default to "research".
-3. Use "off_topic" when the request is clearly unrelated to content marketing,
-   writing, research, or image generation. Err on the side of attempting to help
-   — only use "off_topic" for requests that are obviously out of scope.
-3. Use "blog_with_image" only when the user explicitly requests both a blog post AND an image.
+2. Short conversational filler with no actionable request → "off_topic".
+   This includes: acknowledgements ("ok", "got it", "thanks", "ah i see", "i see"), reactions
+   ("hm", "hmm", "nice", "cool", "great", "fine", "ok then"), or any message that is
+   clearly not asking for content to be created or researched.
+3. If the request is ambiguous but does contain a topic or task hint, default to "research".
+4. Use "off_topic" when the request is clearly unrelated to content marketing,
+   writing, research, or image generation (e.g. coding help, maths, personal advice).
+5. Use "blog_with_image" only when the user explicitly requests both a blog post AND an image.
    Use "linkedin_with_image" only when the user explicitly requests both a LinkedIn post AND an image.
    A request for just a blog or linkedin post uses "blog" / "linkedin" — research is always run automatically.
    A research-only request with no writing asked for uses "research".
-4. Use conversation history ONLY to resolve topic references and pronouns
+6. Use conversation history ONLY to resolve topic references and pronouns
    (e.g. "research about this" after a LinkedIn post about video editing → clarified_query: "video editing software programs").
    Do NOT use history to infer that the user also wants the same output types they asked for before.
 5. "clarified_query" must contain the FULL topic — merge the prior topic with the current
    request when needed to resolve pronouns (e.g. "this", "that", "it").
    But NEVER add output format types (blog/linkedin/image) to clarified_query unless the
    current message explicitly requests them.
-6. Set "is_refinement": true when the user is extending or updating prior output
+7. Set "is_refinement": true when the user is extending or updating prior output
    (keywords: also, add, include, update, change, make it, expand, revise, etc.).
    Set "is_refinement": false for fresh requests or topic changes.
 
@@ -69,6 +72,10 @@ Examples:
 - "Generate an image of a robot doctor" → {"intent": "image", "clarified_query": "robot doctor, futuristic medical setting", "is_refinement": false}
 - "What is 2 + 2?" → {"intent": "off_topic", "clarified_query": "What is 2 + 2?", "is_refinement": false}
 - "Write me a Python script to scrape Twitter" → {"intent": "off_topic", "clarified_query": "Python script to scrape Twitter", "is_refinement": false}
+- "ah i see" → {"intent": "off_topic", "clarified_query": "ah i see", "is_refinement": false}
+- "hm" → {"intent": "off_topic", "clarified_query": "hm", "is_refinement": false}
+- "fine" → {"intent": "off_topic", "clarified_query": "fine", "is_refinement": false}
+- "ok" → {"intent": "off_topic", "clarified_query": "ok", "is_refinement": false}
 """
 
 
