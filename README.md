@@ -73,7 +73,7 @@ The system uses a **generalised queue-based routing** pattern. The `QueryHandler
 ![Funtional Flow](docs/screenshots/flowchart.png)
 
 > _**Note on conditional edges**_:   
-Every node shares a single `_route_next` function. Routing is data-driven — adding a new intent is as simple as defining a new key (intent name) → value (array of nodes) mapping in `_INTENT_TO_NODE` dictionary. No additional graph edges need to be declared.
+The routing is elegantly designed in such a way — A single generic `_route_next` function drives every edge in the graph. Adding a new agent is as simple as: 1. implement the agent class, and 2. add one entry to `_INTENT_TO_NODE`, mapping the intent name → node sequence. The graph's conditional routing wires itself without any custom per-edge logic.
 
 ---
 
