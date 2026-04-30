@@ -106,7 +106,7 @@ def _render_sidebar() -> dict:
             st.rerun()
 
         st.divider()
-        st.caption("Model: GPT-4o + DALL-E 3")
+        st.caption("Built with LangGraph · OpenAI · DALL-E 3 · LangSmith")
         st.caption("Contact at ghr247@gmail.com")
 
     return {
