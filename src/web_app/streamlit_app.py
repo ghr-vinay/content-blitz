@@ -249,7 +249,8 @@ def _render_result(result: AgentState, msg_idx: int = 0) -> None:
         "linkedin": "💼 LinkedIn",
         "image": "🖼️ Image",
         "strategy": "🗺️ Strategy",
-        "multi": "🔀 Multi-format",
+        "linkedin_with_image": "🔀 Multi-format",
+        "blog_with_image": "🔀 Multi-format",
     }.get(result.intent or "", f"({result.intent})")
 
     refinement_tag = " *(refinement)*" if result.is_refinement else ""
@@ -347,6 +348,7 @@ def main() -> None:
 
     st.title("⚡ ContentBlitz")
     st.caption("Your AI-powered content marketing assistant")
+    st.caption("_**Web research runs automatically for grounded, factual results_")
 
     config_ok = _init_config()
     if not config_ok:
@@ -413,6 +415,7 @@ def main() -> None:
 
         # Run the workflow with a spinner (eval runs in background thread)
         with st.chat_message("assistant"):
+            st.caption("_May take ~30-50 seconds more for blog posts and multi-format intents_")
             with st.spinner("Thinking…"):
                 try:
                     result, eval_future = workflow_run_async(
