@@ -17,7 +17,6 @@ Features:
 import json
 import random
 import sys
-import time
 from pathlib import Path
 
 # Ensure project root is on sys.path so `src.*` imports work when
@@ -249,7 +248,8 @@ def _render_result(result: AgentState, msg_idx: int = 0) -> None:
         "linkedin": "💼 LinkedIn",
         "image": "🖼️ Image",
         "strategy": "🗺️ Strategy",
-        "multi": "🔀 Multi-format",
+        "linkedin_with_image": "🔀 Multi-format",
+        "blog_with_image": "🔀 Multi-format",
     }.get(result.intent or "", f"({result.intent})")
 
     refinement_tag = " *(refinement)*" if result.is_refinement else ""
@@ -306,19 +306,19 @@ def _render_chat_history() -> None:
                 _render_result(msg["result"], msg_idx=idx)
 
 
-# ── Background eval polling ────────────────────────────────────────────────────
-def _poll_eval_future() -> str:
+# ── Background eval polling (fragment) ────────────────────────────────────────
+@st.fragment(run_every=2)
+def _eval_polling_fragment() -> None:
     """
-    Check whether the background eval thread has finished.
+    Isolated fragment that polls the background eval future every 2 s.
 
-    Returns:
-        "done"     — future just completed; caller should st.rerun() to show scores.
-        "running"  — still in progress; caller should sleep + st.rerun() to poll again.
-        "idle"     — no active future; nothing to do.
+    Using @st.fragment means only this tiny section reruns on each tick —
+    the rest of the page (chat history, images, expanders) is never touched,
+    eliminating flashing / re-render during eval.
     """
     future = st.session_state.get("eval_future")
     if future is None:
-        return "idle"
+        return
 
     if future.done():
         try:
@@ -335,10 +335,9 @@ def _poll_eval_future() -> str:
         finally:
             st.session_state.eval_future = None
             st.session_state.eval_msg_idx = None
-        return "done"   # scores merged — rerun to render them
+        st.rerun()  # one full rerun to render the newly merged scores
     else:
         st.status("⏳ Evaluating content quality in background…", state="running")
-        return "running"   # still running — rerun after a pause
 
 
 # ── Main ───────────────────────────────────────────────────────────────────────
@@ -391,11 +390,18 @@ def main() -> None:
                     st.rerun()
         st.markdown('<div style="height:12vh"></div>', unsafe_allow_html=True)
 
-    # Apply a suggestion that was clicked in the previous run
+    # Resolve prompt — suggestions, pending flag, or fresh chat input.
+    # Chat input is read here (always renders at page bottom regardless of call site).
+    # If the user typed something, store it as _pending_prompt and rerun — this
+    # mirrors exactly what suggestion clicks do, so the same guard hides suggestions
+    # reliably on the very next rerun before any processing starts.
+    _chat_input = st.chat_input("Ask me to research, write a blog, LinkedIn post, generate an image…")
+    if _chat_input and "_pending_prompt" not in st.session_state:
+        st.session_state["_pending_prompt"] = _chat_input
+        st.rerun()
+
     if "_pending_prompt" in st.session_state:
         prompt = st.session_state.pop("_pending_prompt")
-    elif prompt := st.chat_input("Ask me to research, write a blog, LinkedIn post, generate an image…"):
-        pass
     else:
         prompt = None
 
@@ -405,20 +411,24 @@ def main() -> None:
         with st.chat_message("user"):
             st.markdown(prompt)
 
-        # Run the workflow with a spinner (eval runs in background thread)
+        # Run the workflow with a live progress indicator (eval runs in background thread)
         with st.chat_message("assistant"):
-            with st.spinner("Thinking…"):
-                try:
-                    result, eval_future = workflow_run_async(
-                        user_query=prompt,
-                        image_style=settings["image_style"],
-                        image_size=settings["image_size"],
-                        linkedin_post_type=settings["linkedin_post_type"],
-                        conversation_history=st.session_state.conversation_history,
-                    )
-                except Exception as exc:
-                    result = AgentState(user_query=prompt, error=str(exc))
-                    eval_future = None
+            _status = st.empty()
+            _status.status("Thinking…", expanded=False)
+            try:
+                result, eval_future = workflow_run_async(
+                    user_query=prompt,
+                    image_style=settings["image_style"],
+                    image_size=settings["image_size"],
+                    linkedin_post_type=settings["linkedin_post_type"],
+                    conversation_history=st.session_state.conversation_history,
+                    on_progress=lambda msg: _status.status(msg, expanded=False),
+                )
+            except Exception as exc:
+                result = AgentState(user_query=prompt, error=str(exc))
+                eval_future = None
+            finally:
+                _status.empty()
 
             # Build assistant message text
             if result.error:
@@ -454,17 +464,13 @@ def main() -> None:
         if eval_future is not None:
             st.session_state.eval_future = eval_future
             st.session_state.eval_msg_idx = len(st.session_state.messages) - 1
-            st.rerun()  # first rerun: re-render from history and start polling
 
-    # ── Poll AFTER all content is rendered ──────────────────────────────────
-    # st.rerun() is only triggered here so the full page (chat history +
-    # generated content) is committed to the browser before refreshing.
-    eval_status = _poll_eval_future()
-    if eval_status == "running":
-        time.sleep(2)   # throttle polling to ~1 rerun per 2 s
-        st.rerun()
-    elif eval_status == "done":
-        st.rerun()      # re-render immediately to show the merged scores
+    # ── Eval polling fragment (only active when there is a pending future) ───
+    # Not rendered during the run where the workflow is executing (prompt is set),
+    # which prevents the fragment's auto-tick from causing the chat history to
+    # flash/ghost while the LLM call is in progress.
+    if not prompt and st.session_state.get("eval_future") is not None:
+        _eval_polling_fragment()
 
 
 if __name__ == "__main__":

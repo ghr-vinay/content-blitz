@@ -23,6 +23,7 @@ from src.core.models import AgentState, EvalScore
 from src.core.router import build_app
 from src.eval.llm_eval import evaluate_agent_state
 from src.utils.logger import get_logger
+from src.utils.progress import progress_context
 from src.workflow.state_management import GraphState
 
 logger = get_logger(__name__)
@@ -49,6 +50,7 @@ def run(
     linkedin_post_type: str = "general",
     conversation_history: list[dict] | None = None,
     config: Config | None = None,
+    on_progress=None,
 ) -> AgentState:
     """
     Run a full ContentBlitz workflow for a user query (blocking eval).
@@ -63,6 +65,7 @@ def run(
         linkedin_post_type=linkedin_post_type,
         conversation_history=conversation_history,
         config=config,
+        on_progress=on_progress,
     )
 
     cfg = config or Config.get_instance()
@@ -90,6 +93,7 @@ def run_non_blocking_eval(
     linkedin_post_type: str = "general",
     conversation_history: list[dict] | None = None,
     config: Config | None = None,
+    on_progress=None,
 ) -> tuple[AgentState, "Future[list[EvalScore]] | None"]:
     """
     Run workflow and return content immediately; eval runs in a background thread.
@@ -105,6 +109,7 @@ def run_non_blocking_eval(
         linkedin_post_type=linkedin_post_type,
         conversation_history=conversation_history,
         config=config,
+        on_progress=on_progress,
     )
     _log_result_summary(result)
 
@@ -130,6 +135,7 @@ def _invoke_workflow(
     linkedin_post_type: str,
     conversation_history: list[dict] | None,
     config: Config | None,
+    on_progress=None,
 ) -> tuple[AgentState, str | None]:
     """Invoke the LangGraph app and return (AgentState, run_id). No eval."""
     if not user_query.strip():
@@ -169,13 +175,14 @@ def _invoke_workflow(
 
     try:
         run_collector = RunCollectorCallbackHandler()
-        final_state: GraphState = app.invoke(
-            initial_state,
-            config={
-                "run_name": f"contentblitz/{user_query[:40]}",
-                "callbacks": [run_collector],
-            },
-        )
+        with progress_context(on_progress):
+            final_state: GraphState = app.invoke(
+                initial_state,
+                config={
+                    "run_name": f"contentblitz/{user_query[:40]}",
+                    "callbacks": [run_collector],
+                },
+            )
         run_id = str(run_collector.traced_runs[0].id) if run_collector.traced_runs else None
     except Exception as exc:
         logger.exception("Workflow._invoke failed: %s", exc)

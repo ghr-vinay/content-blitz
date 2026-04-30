@@ -4,6 +4,7 @@ from src.agents.base_agent import BaseAgent
 from src.core.models import ResearchResult
 from src.integrations.base_tool import BaseLLMClient, BaseSearchTool
 from src.utils.logger import get_logger
+from src.utils.progress import report_progress
 
 logger = get_logger(__name__)
 
@@ -99,6 +100,7 @@ class ResearchAgent(BaseAgent):
         if not user_request:
             return {"error": "ResearchAgent: no topic provided."}
 
+        report_progress("🔍 Researching…")
         logger.info("ResearchAgent: researching | is_refinement=%s | request=%r", is_refinement, user_request[:80])
 
         try:

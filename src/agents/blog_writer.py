@@ -5,6 +5,7 @@ from src.agents.base_agent import BaseAgent
 from src.core.models import BlogPost, ResearchResult
 from src.integrations.base_tool import BaseLLMClient
 from src.utils.logger import get_logger
+from src.utils.progress import report_progress
 
 logger = get_logger(__name__)
 
@@ -98,6 +99,7 @@ class BlogWriterAgent(BaseAgent):
         if not topic:
             return {"error": "BlogWriterAgent: no topic provided."}
 
+        report_progress("✍️ Writing blog post…")
         logger.info("BlogWriterAgent: writing blog | topic=%r | is_refinement=%s", topic[:80], is_refinement)
 
         research_context = ""

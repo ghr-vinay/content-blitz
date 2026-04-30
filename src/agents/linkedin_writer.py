@@ -5,6 +5,8 @@ from src.agents.base_agent import BaseAgent
 from src.core.models import LinkedInPost, ResearchResult
 from src.integrations.base_tool import BaseLLMClient
 from src.utils.logger import get_logger
+from src.utils.progress import report_progress
+from src.utils.progress import report_progress
 
 logger = get_logger(__name__)
 
@@ -97,6 +99,7 @@ class LinkedInWriterAgent(BaseAgent):
         if not topic:
             return {"error": "LinkedInWriterAgent: no topic provided."}
 
+        report_progress("💼 Writing LinkedIn post…")
         logger.info(
             "LinkedInWriterAgent: writing post | topic=%r | type=%s | is_refinement=%s",
             topic[:60], post_type, is_refinement,

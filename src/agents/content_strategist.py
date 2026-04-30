@@ -5,6 +5,7 @@ from src.agents.base_agent import BaseAgent
 from src.core.models import ResearchResult
 from src.integrations.base_tool import BaseLLMClient
 from src.utils.logger import get_logger
+from src.utils.progress import report_progress
 
 logger = get_logger(__name__)
 
@@ -66,6 +67,7 @@ class ContentStrategistAgent(BaseAgent):
         if not topic:
             return {"error": "ContentStrategistAgent: no topic provided."}
 
+        report_progress("🗺️ Building content strategy…")
         logger.info("ContentStrategistAgent: building strategy for topic=%r", topic[:80])
 
         research_context = ""

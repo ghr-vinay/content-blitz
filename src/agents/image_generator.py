@@ -4,6 +4,7 @@ from src.agents.base_agent import BaseAgent
 from src.core.models import ImageResult
 from src.integrations.base_tool import BaseImageTool, BaseLLMClient
 from src.utils.logger import get_logger
+from src.utils.progress import report_progress
 
 logger = get_logger(__name__)
 
@@ -64,7 +65,7 @@ class ImageGeneratorAgent(BaseAgent):
 
         if not user_request:
             return {"error": "ImageGeneratorAgent: no image request provided."}
-
+        report_progress("🎨 Generating image…")
         logger.info("ImageGeneratorAgent: request=%r | style=%s | is_refinement=%s", user_request[:60], style, is_refinement)
 
         try:

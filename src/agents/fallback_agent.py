@@ -3,6 +3,7 @@ from typing import Any
 from src.agents.base_agent import BaseAgent
 from src.integrations.base_tool import BaseLLMClient
 from src.utils.logger import get_logger
+from src.utils.progress import report_progress
 
 logger = get_logger(__name__)
 
@@ -49,6 +50,7 @@ class FallbackAgent(BaseAgent):
 
     def run(self, state: dict[str, Any]) -> dict[str, Any]:
         user_query: str = state.get("user_query", "").strip()
+        report_progress("💬 Thinking…")
         logger.info("FallbackAgent: handling off-topic query=%r", user_query[:80])
 
         prompt = (
