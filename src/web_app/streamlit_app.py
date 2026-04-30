@@ -369,8 +369,8 @@ def main() -> None:
         ("💼", "LinkedIn post", "Write a thought-leadership LinkedIn post about RAG in enterprise AI"),
         ("🔍", "Research", "Research the latest trends in large language models"),
         ("🎨", "Blog + image", "Write a blog post about vector databases and generate a cover image"),
-        ("🗺️", "Content strategy", "Give me a content strategy for a SaaS company launching a developer tool"),
-        ("🔄", "LinkedIn + image", "Write a LinkedIn announcement post about an AI product launch and generate an image"),
+        ("🗺️", "Content strategy", "Give me a content strategy to promote my new wedding photography company"),
+        ("🔄", "LinkedIn + image", "Write an engaging LinkedIn post about exploring filmmaking as a career choice for new grads with an image"),
     ]
 
     if not st.session_state.messages and "_pending_prompt" not in st.session_state:
