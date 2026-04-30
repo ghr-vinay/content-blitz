@@ -149,7 +149,7 @@ All agents extend `BaseAgent` and implement the `run(state) -> state` contract. 
 - [x] **8.4** Add sidebar controls — image style, LinkedIn post type, image size selectors; clear conversation button
 - [x] **8.5** Handle loading states — spinner during agent workflow execution
 - [x] **8.6** Add export/download buttons — download generated content as markdown or copy to clipboard
-- [x] **8.7** *(Improvement)* Add zero-state suggestion cards — when conversation is empty, show 3 randomly sampled prompt suggestions centered vertically and horizontally on the page; clicking a card submits the prompt via `st.session_state["_pending_prompt"]` + `st.rerun()`; cards disappear once the first message is sent
+- [x] **8.7** *(Improvement)* Add zero-state suggestion cards — when conversation is empty, show 3 randomly sampled prompt suggestions centered vertically and horizontally on the page; clicking a card submits the prompt via `st.session_state["_pending_prompt"]` + `st.rerun()`; cards disappear once a card is clicked or the first message is sent
 - [x] **8.7.1** *(Bug fix)* `StreamlitDuplicateElementKey` crash when the same topic appears in multiple chat history messages — all `_download_button` and `st.button` widget keys were derived solely from content hashes (e.g. `dl_research_{hash(r.topic)}`), which collide when history is re-rendered; added `msg_idx: int = 0` parameter to `_render_result`, `_render_research`, `_render_blog`, `_render_linkedin`, and `_render_strategy`; all widget keys now include `msg_idx` as a prefix; `_render_chat_history` passes the enumerate index and the in-flight render passes `len(st.session_state.messages)` to guarantee global uniqueness
 
 ---

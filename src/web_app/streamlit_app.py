@@ -391,11 +391,17 @@ def main() -> None:
                     st.rerun()
         st.markdown('<div style="height:12vh"></div>', unsafe_allow_html=True)
 
-    # Apply a suggestion that was clicked in the previous run
+    # Apply a suggestion that was clicked in the previous run.
+    # Chat input also routes through _pending_prompt so the suggestions guard
+    # (`"_pending_prompt" not in st.session_state`) fires on the very same rerun
+    # the user submits — identical behaviour to clicking a suggestion card.
+    _chat_input = st.chat_input("Ask me to research, write a blog, LinkedIn post, generate an image…")
+    if _chat_input and "_pending_prompt" not in st.session_state:
+        st.session_state["_pending_prompt"] = _chat_input
+        st.rerun()
+
     if "_pending_prompt" in st.session_state:
         prompt = st.session_state.pop("_pending_prompt")
-    elif prompt := st.chat_input("Ask me to research, write a blog, LinkedIn post, generate an image…"):
-        pass
     else:
         prompt = None
 
