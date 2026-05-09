@@ -1,5 +1,6 @@
 # ContentBlitz — AI Content Marketing Assistant
 _Available at_: https://github.com/ghr-vinay/content-blitz
+_Deployed at_: https://content-blitz-ai.streamlit.app
 
 > A **production-grade, multi-agent AI system** that generates SEO blog posts, LinkedIn posts, web research summaries, content strategies, and AI images — all from a single natural-language prompt.
 
